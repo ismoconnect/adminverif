@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gestion des Coupons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        .sidebar { width: 256px; }
+        .main-content { margin-left: 256px; }
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 sidebar bg-white border-r border-gray-200 transition-transform duration-300">
+        <div class="flex h-16 items-center px-4 border-b border-gray-200">
+            <h1 class="text-xl font-bold text-gray-900">Admin Coupons</h1>
+        </div>
+        <nav class="flex-1 space-y-1 px-2 py-4">
+            <a href="#" onclick="showPage('dashboard')" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z" />
+                </svg>
+                Dashboard
+            </a>
+            <a href="#" onclick="showPage('submissions')" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Soumissions
+            </a>
+            <a href="#" onclick="showPage('statistics')" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Statistiques
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm">
+            <button onclick="toggleSidebar()" class="lg:hidden -m-2.5 p-2.5 text-gray-700">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+                <div class="flex flex-1"></div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <main class="py-6">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                        <p class="text-gray-600">Vue d'ensemble des soumissions de coupons</p>
+                    </div>
+
+                    <!-- Statistiques -->
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total</dt>
+                                        <dd class="text-lg font-medium text-gray-900" id="total-submissions">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">En attente</dt>
+                                        <dd class="text-lg font-medium text-gray-900" id="pending-submissions">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Terminées</dt>
+                                        <dd class="text-lg font-medium text-gray-900" id="completed-submissions">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3c1.657 0 3-1.343 3-3s-1.343-3-3-3z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1v6m0 6v6" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Montant total</dt>
+                                        <dd class="text-lg font-medium text-gray-900" id="total-amount">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Soumissions récentes -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Soumissions récentes</h3>
+                        <div class="overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-submissions" class="bg-white divide-y divide-gray-200">
+                                    <!-- Les données seront chargées ici -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submissions Page -->
+                <div id="submissions-page" class="page hidden">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">Soumissions</h1>
+                        <p class="text-gray-600">Gérer toutes les soumissions de coupons</p>
+                    </div>
+
+                    <!-- Filtres -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-1">
+                                <input type="text" id="search-input" placeholder="Rechercher par nom, email ou type..." 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            </div>
+                            <div>
+                                <select id="status-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <option value="all">Tous les statuts</option>
+                                    <option value="pending">En attente</option>
+                                    <option value="processing">En cours</option>
+                                    <option value="completed">Terminées</option>
+                                    <option value="rejected">Rejetées</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau des soumissions -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="all-submissions" class="bg-white divide-y divide-gray-200">
+                                    <!-- Les données seront chargées ici -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Page -->
+                <div id="statistics-page" class="page hidden">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">Statistiques</h1>
+                        <p class="text-gray-600">Analyse détaillée des soumissions</p>
+                    </div>
+
+                    <!-- Graphiques et statistiques détaillées -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Répartition par type</h3>
+                            <div id="type-distribution" class="space-y-3">
+                                <!-- Les données seront chargées ici -->
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Métriques de performance</h3>
+                            <div id="performance-metrics" class="space-y-4">
+                                <!-- Les données seront chargées ici -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour les détails -->
+    <div id="modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" onclick="closeModal()"></div>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Détails de la soumission</h3>
+                            <div id="modal-content">
+                                <!-- Le contenu sera chargé ici -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button onclick="closeModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmXDCUjbHHP_6mw6Xihb8A66Di0L7plaI",
+            authDomain: "myverif-67454.firebaseapp.com",
+            projectId: "myverif-67454",
+            storageBucket: "myverif-67454.firebasestorage.app",
+            messagingSenderId: "1093371003509",
+            appId: "1:1093371003509:web:eb0c5f9390b644d4066e3c"
+        };
+
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let allSubmissions = [];
+        let currentPage = 'dashboard';
+
+        // Navigation
+        function showPage(page) {
+            // Masquer toutes les pages
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            
+            // Afficher la page sélectionnée
+            document.getElementById(page + '-page').classList.remove('hidden');
+            
+            // Mettre à jour la navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('bg-orange-100', 'text-orange-900');
+                item.classList.add('text-gray-600');
+            });
+            
+            event.target.closest('.nav-item').classList.add('bg-orange-100', 'text-orange-900');
+            event.target.closest('.nav-item').classList.remove('text-gray-600');
+            
+            currentPage = page;
+            
+            // Charger les données de la page
+            if (page === 'dashboard') {
+                loadDashboard();
+            } else if (page === 'submissions') {
+                loadSubmissions();
+            } else if (page === 'statistics') {
+                loadStatistics();
+            }
+        }
+
+        // Toggle sidebar mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Charger les données
+        async function loadData() {
+            try {
+                const snapshot = await db.collection('coupon_submissions').orderBy('createdAt', 'desc').limit(100).get();
+                allSubmissions = [];
+                snapshot.forEach(doc => {
+                    allSubmissions.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (currentPage === 'dashboard') {
+                    loadDashboard();
+                } else if (currentPage === 'submissions') {
+                    loadSubmissions();
+                } else if (currentPage === 'statistics') {
+                    loadStatistics();
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement:', error);
+            }
+        }
+
+        // Dashboard
+        function loadDashboard() {
+            const stats = calculateStats();
+            
+            document.getElementById('total-submissions').textContent = stats.total;
+            document.getElementById('pending-submissions').textContent = stats.pending;
+            document.getElementById('completed-submissions').textContent = stats.completed;
+            document.getElementById('total-amount').textContent = stats.totalAmount.toFixed(2) + ' €';
+            
+            // Soumissions récentes
+            const recentSubmissions = allSubmissions.slice(0, 10);
+            const tbody = document.getElementById('recent-submissions');
+            tbody.innerHTML = '';
+            
+            recentSubmissions.forEach(submission => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">${submission.fullName}</div>
+                            <div class="text-sm text-gray-500">${submission.email}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${submission.type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(submission.status)}">
+                            ${submission.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(submission.createdAt)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${submission.totalAmount ? submission.totalAmount.toFixed(2) + ' €' : 'N/A'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Soumissions
+        function loadSubmissions() {
+            const tbody = document.getElementById('all-submissions');
+            tbody.innerHTML = '';
+            
+            allSubmissions.forEach(submission => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">${submission.fullName}</div>
+                            <div class="text-sm text-gray-500">${submission.email}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${submission.type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(submission.status)}">
+                            ${submission.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(submission.createdAt)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${submission.totalAmount ? submission.totalAmount.toFixed(2) + ' €' : 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="showSubmissionDetails('${submission.id}')" class="text-orange-600 hover:text-orange-900">
+                            Voir détails
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Statistiques
+        function loadStatistics() {
+            const stats = calculateStats();
+            
+            // Répartition par type
+            const typeDistribution = document.getElementById('type-distribution');
+            typeDistribution.innerHTML = '';
+            
+            Object.entries(stats.byType).forEach(([type, count]) => {
+                const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                div.innerHTML = `
+                    <div class="w-24 text-sm text-gray-600 truncate">${type}</div>
+                    <div class="flex-1 mx-3">
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                    <div class="w-12 text-sm font-medium text-gray-900">${count}</div>
+                    <div class="w-12 text-xs text-gray-500">${percentage.toFixed(1)}%</div>
+                `;
+                typeDistribution.appendChild(div);
+            });
+            
+            // Métriques de performance
+            const performanceMetrics = document.getElementById('performance-metrics');
+            performanceMetrics.innerHTML = `
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">${stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0}%</div>
+                    <p class="text-sm text-gray-600 mt-2">Taux de traitement</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-red-600">${stats.total > 0 ? ((stats.rejected / stats.total) * 100).toFixed(1) : 0}%</div>
+                    <p class="text-sm text-gray-600 mt-2">Taux de rejet</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600">${stats.total > 0 ? (stats.totalAmount / stats.total).toFixed(2) : 0} €</div>
+                    <p class="text-sm text-gray-600 mt-2">Montant moyen</p>
+                </div>
+            `;
+        }
+
+        // Calculer les statistiques
+        function calculateStats() {
+            const stats = {
+                total: allSubmissions.length,
+                pending: 0,
+                processing: 0,
+                completed: 0,
+                rejected: 0,
+                totalAmount: 0,
+                byType: {}
+            };
+            
+            allSubmissions.forEach(submission => {
+                stats[submission.status] = (stats[submission.status] || 0) + 1;
+                stats.byType[submission.type] = (stats.byType[submission.type] || 0) + 1;
+                stats.totalAmount += submission.totalAmount || 0;
+            });
+            
+            return stats;
+        }
+
+        // Utilitaires
+        function formatDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'pending': return 'text-yellow-600 bg-yellow-100';
+                case 'processing': return 'text-blue-600 bg-blue-100';
+                case 'completed': return 'text-green-600 bg-green-100';
+                case 'rejected': return 'text-red-600 bg-red-100';
+                default: return 'text-gray-600 bg-gray-100';
+            }
+        }
+
+        function showSubmissionDetails(submissionId) {
+            const submission = allSubmissions.find(s => s.id === submissionId);
+            if (!submission) return;
+            
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Informations client</h4>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="font-medium">Nom:</span> ${submission.fullName}</p>
+                            <p><span class="font-medium">Email:</span> ${submission.email}</p>
+                            <p><span class="font-medium">Téléphone:</span> ${submission.phone || 'N/A'}</p>
+                            <p><span class="font-medium">Pays:</span> ${submission.country}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Informations soumission</h4>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="font-medium">Type:</span> ${submission.type}</p>
+                            <p><span class="font-medium">Statut:</span> 
+                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(submission.status)}">
+                                    ${submission.status}
+                                </span>
+                            </p>
+                            <p><span class="font-medium">Date:</span> ${formatDate(submission.createdAt)}</p>
+                            <p><span class="font-medium">Montant total:</span> ${submission.totalAmount ? submission.totalAmount.toFixed(2) + ' €' : 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h4 class="font-medium text-gray-900 mb-2">Codes des coupons</h4>
+                    <div class="space-y-2">
+                        ${submission.coupons.map(coupon => `
+                            <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                                <span class="text-sm font-medium text-gray-600">#${coupon.id}</span>
+                                <span class="text-sm font-mono bg-white px-2 py-1 rounded border">
+                                    ${submission.hideCodes ? '••••••••' : coupon.code}
+                                </span>
+                                <span class="text-sm text-gray-600">
+                                    ${coupon.amount ? coupon.amount + ' €' : 'N/A'}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            
+            // Actualiser les données toutes les 30 secondes
+            setInterval(loadData, 30000);
+        });
+    </script>
+</body>
+</html>
