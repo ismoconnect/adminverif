@@ -22,6 +22,7 @@ import Statistics from './pages/Statistics'
 import ManageRefunds from './pages/ManageRefunds'
 import RefundDetails from './pages/RefundDetails'
 import ManageAdmins from './pages/ManageAdmins'
+import ContactMessages from './pages/ContactMessages'
 import Layout from './components/Layout'
 
 function App() {
@@ -89,6 +90,13 @@ function App() {
               <ProtectedRoute>
                 <AdminLayout>
                   <ManageAdmins />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/contact-messages" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <ContactMessages />
                 </AdminLayout>
               </ProtectedRoute>
             } />
