@@ -21,6 +21,7 @@ import Submissions from './pages/Submissions'
 import Statistics from './pages/Statistics'
 import ManageRefunds from './pages/ManageRefunds'
 import RefundDetails from './pages/RefundDetails'
+import ManageAdmins from './pages/ManageAdmins'
 import Layout from './components/Layout'
 
 function App() {
@@ -81,6 +82,13 @@ function App() {
               <ProtectedRoute>
                 <AdminLayout>
                   <RefundDetails />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/manage-admins" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <ManageAdmins />
                 </AdminLayout>
               </ProtectedRoute>
             } />

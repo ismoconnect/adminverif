@@ -38,7 +38,7 @@ export default function InitAdmin() {
         setResult({
           type: 'success',
           message: 'Administrateur créé avec succès !',
-          details: `ID: ${result.adminId}`
+          details: 'Votre compte est en attente d\'autorisation. Un super-administrateur doit approuver votre accès avant que vous puissiez vous connecter.'
         })
       } else {
         setResult({
@@ -216,10 +216,10 @@ export default function InitAdmin() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">Première utilisation</h3>
+              <h3 className="text-sm font-medium text-blue-800">Processus d'autorisation</h3>
               <p className="text-sm text-blue-700 mt-1">
-                Cette page permet de créer le premier administrateur du système. 
-                Une fois créé, vous pourrez vous connecter avec ces identifiants.
+                Après la création de votre compte, un super-administrateur doit autoriser votre accès 
+                dans Firestore avant que vous puissiez vous connecter au système.
               </p>
             </div>
           </div>

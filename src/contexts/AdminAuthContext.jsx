@@ -64,6 +64,35 @@ export const AdminAuthProvider = ({ children }) => {
     }
   }
 
+  // Fonction pour connecter automatiquement un admin après création
+  const autoLogin = async (adminData) => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Simuler une authentification réussie avec les données de l'admin créé
+      const admin = {
+        id: adminData.id,
+        username: adminData.username,
+        name: adminData.name,
+        email: adminData.email,
+        role: adminData.role,
+        permissions: adminData.permissions,
+        isActive: adminData.isActive
+      }
+      
+      setAdmin(admin)
+      localStorage.setItem('adminId', admin.id)
+      return { success: true, admin }
+    } catch (error) {
+      const errorMessage = 'Erreur de connexion automatique'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const logout = () => {
     setAdmin(null)
     localStorage.removeItem('adminId')
@@ -75,6 +104,7 @@ export const AdminAuthProvider = ({ children }) => {
     loading,
     error,
     login,
+    autoLogin,
     logout,
     isAuthenticated: !!admin
   }
