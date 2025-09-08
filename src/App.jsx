@@ -23,6 +23,7 @@ import ManageRefunds from './pages/ManageRefunds'
 import RefundDetails from './pages/RefundDetails'
 import ManageAdmins from './pages/ManageAdmins'
 import ContactMessages from './pages/ContactMessages'
+import ChangePassword from './pages/ChangePassword'
 import Layout from './components/Layout'
 
 function App() {
@@ -97,6 +98,13 @@ function App() {
               <ProtectedRoute>
                 <AdminLayout>
                   <ContactMessages />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/change-password" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <ChangePassword />
                 </AdminLayout>
               </ProtectedRoute>
             } />
