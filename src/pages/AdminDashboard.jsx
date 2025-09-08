@@ -352,8 +352,8 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
+        </div>
 
         {/* Tableau des soumissions */}
         <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
@@ -376,19 +376,19 @@ export default function AdminDashboard() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Client
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Statut
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Service
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Coupons
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Date
                       </th>
                     </tr>
@@ -485,13 +485,11 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
-        </div>
-      </div>
 
         {/* Remboursements récents */}
         <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-6 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900">5 derniers remboursements</h3>
+            <h3 className="text-xl font-bold text-gray-900">5 derniers remboursements</h3>
             <p className="mt-2 text-sm text-gray-600">
               Les 5 demandes de remboursement les plus récentes
             </p>
@@ -510,23 +508,23 @@ export default function AdminDashboard() {
           ) : (
             <>
               {/* Version desktop - Tableau */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden lg:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Client
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Référence
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Montant
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Statut
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         Date
                       </th>
                     </tr>
@@ -566,7 +564,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Version mobile - Cartes */}
-              <div className="md:hidden">
+              <div className="lg:hidden">
                 <div className="space-y-3 p-4">
                   {recentRefunds.map((refund) => {
                     const statusInfo = getRefundStatusInfo(refund.status)
@@ -611,28 +609,30 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
+      </div>
 
-        {/* Footer normal */}
+      {/* Footer normal */}
         <footer className="bg-white border-t border-gray-200 shadow-lg mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-gray-700">Admin Panel</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>© {new Date().getFullYear()} MyVerif</span>
-                <span>•</span>
-                <span>Version 1.0</span>
-              </div>
+              <span className="text-sm font-medium text-gray-700">Admin Panel</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span>© {new Date().getFullYear()} MyVerif</span>
+              <span>•</span>
+              <span>Version 1.0</span>
             </div>
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
+    </div>
+    </div>
     </div>
   )
 }
