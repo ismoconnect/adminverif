@@ -170,6 +170,12 @@ export default function AdminDashboard() {
       {/* Contenu principal avec padding pour le header fixe sur desktop */}
       <div className="flex-1 pt-0 lg:pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Titre Soumissions */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Soumissions</h2>
+          <p className="mt-1 text-sm text-gray-600">Statistiques des soumissions de coupons et cartes cadeaux</p>
+        </div>
+        
         {/* Statistiques */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           {/* Carte Total */}
