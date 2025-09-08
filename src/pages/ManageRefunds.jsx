@@ -304,30 +304,30 @@ export default function ManageRefunds() {
 
           {/* Liste des demandes améliorée */}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Version desktop - Tableau */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            {/* Version desktop - Tableau optimisé */}
+            <div className="hidden xl:block">
+              <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
                       Référence
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-48">
                       Client
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">
                       Montant
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
                       Méthode
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">
                       Statut
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-28">
                       Date
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
                       Actions
                     </th>
                   </tr>
@@ -337,39 +337,43 @@ export default function ManageRefunds() {
                     const statusInfo = getStatusInfo(request.status)
                     return (
                       <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-200">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 font-mono">
+                        <td className="px-3 py-3">
+                          <div className="text-xs font-medium text-gray-900 font-mono truncate" title={request.referenceNumber}>
                             {request.referenceNumber}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{request.fullName}</div>
-                          <div className="text-sm text-gray-500">{request.email}</div>
+                        <td className="px-3 py-3">
+                          <div className="text-xs font-medium text-gray-900 truncate" title={request.fullName}>
+                            {request.fullName}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate" title={request.email}>
+                            {request.email}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3">
                           <div className="text-sm font-bold text-gray-900">
                             {request.totalAmount.toFixed(2)} €
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
+                        <td className="px-3 py-3">
+                          <div className="text-xs text-gray-900 truncate" title={getRefundMethodText(request.refundMethod)}>
                             {getRefundMethodText(request.refundMethod)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color}`}>
-                            <span className="mr-1">{statusInfo.icon}</span>
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color}`}>
+                            <span className="mr-1 text-xs">{statusInfo.icon}</span>
                             {statusInfo.text}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-3 text-xs text-gray-500">
                           {formatDate(request.submittedAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-2">
+                        <td className="px-3 py-3 text-xs font-medium">
+                          <div className="flex flex-col gap-1">
                             <Link
                               to={`/admin/refund-details/${request.id}`}
-                              className="text-blue-600 hover:text-blue-900 font-medium"
+                              className="text-blue-600 hover:text-blue-900 font-medium text-xs"
                             >
                               Voir détails
                             </Link>
@@ -378,25 +382,25 @@ export default function ManageRefunds() {
                               <button
                                 onClick={() => handleStatusUpdate(request.id, 'processing')}
                                 disabled={updatingStatus === request.id}
-                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium"
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
                               >
                                 {updatingStatus === request.id ? '...' : 'Traiter'}
                               </button>
                             )}
                             
                             {request.status === 'processing' && (
-                              <div className="flex gap-1">
+                              <div className="flex flex-col gap-1">
                                 <button
                                   onClick={() => handleStatusUpdate(request.id, 'approved')}
                                   disabled={updatingStatus === request.id}
-                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium"
+                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
                                 >
                                   {updatingStatus === request.id ? '...' : 'Approuver'}
                                 </button>
                                 <button
                                   onClick={() => handleStatusUpdate(request.id, 'rejected')}
                                   disabled={updatingStatus === request.id}
-                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium"
+                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium text-xs"
                                 >
                                   {updatingStatus === request.id ? '...' : 'Rejeter'}
                                 </button>
@@ -407,7 +411,7 @@ export default function ManageRefunds() {
                               <button
                                 onClick={() => handleStatusUpdate(request.id, 'completed')}
                                 disabled={updatingStatus === request.id}
-                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium"
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
                               >
                                 {updatingStatus === request.id ? '...' : 'Finaliser'}
                               </button>
@@ -421,50 +425,174 @@ export default function ManageRefunds() {
               </table>
             </div>
 
-            {/* Version mobile - Cartes */}
+            {/* Version tablet - Tableau compact */}
+            <div className="hidden lg:block xl:hidden">
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Référence
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Client
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Montant
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredRequests.map((request) => {
+                    const statusInfo = getStatusInfo(request.status)
+                    return (
+                      <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-200">
+                        <td className="px-3 py-3">
+                          <div className="text-xs font-medium text-gray-900 font-mono truncate" title={request.referenceNumber}>
+                            {request.referenceNumber}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {formatDate(request.submittedAt)}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-xs font-medium text-gray-900 truncate" title={request.fullName}>
+                            {request.fullName}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate" title={request.email}>
+                            {request.email}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {getRefundMethodText(request.refundMethod)}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-sm font-bold text-gray-900">
+                            {request.totalAmount.toFixed(2)} €
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color}`}>
+                            <span className="mr-1 text-xs">{statusInfo.icon}</span>
+                            {statusInfo.text}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-xs font-medium">
+                          <div className="flex flex-col gap-1">
+                            <Link
+                              to={`/admin/refund-details/${request.id}`}
+                              className="text-blue-600 hover:text-blue-900 font-medium text-xs"
+                            >
+                              Voir détails
+                            </Link>
+                            
+                            {request.status === 'pending' && (
+                              <button
+                                onClick={() => handleStatusUpdate(request.id, 'processing')}
+                                disabled={updatingStatus === request.id}
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                              >
+                                {updatingStatus === request.id ? '...' : 'Traiter'}
+                              </button>
+                            )}
+                            
+                            {request.status === 'processing' && (
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  onClick={() => handleStatusUpdate(request.id, 'approved')}
+                                  disabled={updatingStatus === request.id}
+                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                >
+                                  {updatingStatus === request.id ? '...' : 'Approuver'}
+                                </button>
+                                <button
+                                  onClick={() => handleStatusUpdate(request.id, 'rejected')}
+                                  disabled={updatingStatus === request.id}
+                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium text-xs"
+                                >
+                                  {updatingStatus === request.id ? '...' : 'Rejeter'}
+                                </button>
+                              </div>
+                            )}
+                            
+                            {request.status === 'approved' && (
+                              <button
+                                onClick={() => handleStatusUpdate(request.id, 'completed')}
+                                disabled={updatingStatus === request.id}
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                              >
+                                {updatingStatus === request.id ? '...' : 'Finaliser'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Version mobile - Cartes améliorées */}
             <div className="lg:hidden">
               {filteredRequests.map((request) => {
                 const statusInfo = getStatusInfo(request.status)
                 return (
-                  <div key={request.id} className="p-4 border-b border-gray-200 last:border-b-0">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="text-sm font-mono font-medium text-gray-900 mb-1">
+                  <div key={request.id} className="p-4 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-mono font-medium text-gray-900 mb-1 truncate" title={request.referenceNumber}>
                           {request.referenceNumber}
                         </div>
-                        <div className="text-sm font-medium text-gray-900">{request.fullName}</div>
-                        <div className="text-xs text-gray-500">{request.email}</div>
+                        <div className="text-sm font-medium text-gray-900 truncate" title={request.fullName}>
+                          {request.fullName}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate" title={request.email}>
+                          {request.email}
+                        </div>
                       </div>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color}`}>
-                        <span className="mr-1">{statusInfo.icon}</span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-2 flex-shrink-0 ${statusInfo.bgColor} ${statusInfo.color}`}>
+                        <span className="mr-1 text-xs">{statusInfo.icon}</span>
                         {statusInfo.text}
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <div className="text-xs text-gray-500">Montant</div>
-                        <div className="text-sm font-bold text-gray-900">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Montant</div>
+                        <div className="text-lg font-bold text-gray-900">
                           {request.totalAmount.toFixed(2)} €
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Méthode</div>
-                        <div className="text-sm text-gray-900">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Méthode</div>
+                        <div className="text-sm text-gray-900 truncate" title={getRefundMethodText(request.refundMethod)}>
                           {getRefundMethodText(request.refundMethod)}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="text-xs text-gray-500 mb-3">
+                    <div className="text-xs text-gray-500 mb-4 flex items-center">
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                       {formatDate(request.submittedAt)}
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
                       <Link
                         to={`/admin/refund-details/${request.id}`}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                        className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200"
                       >
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Voir détails
                       </Link>
                       
@@ -472,9 +600,16 @@ export default function ManageRefunds() {
                         <button
                           onClick={() => handleStatusUpdate(request.id, 'processing')}
                           disabled={updatingStatus === request.id}
-                          className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                          className="inline-flex items-center bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200"
                         >
-                          {updatingStatus === request.id ? '...' : 'Traiter'}
+                          {updatingStatus === request.id ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                          ) : (
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          )}
+                          {updatingStatus === request.id ? 'Traitement...' : 'Traiter'}
                         </button>
                       )}
                       
@@ -483,16 +618,30 @@ export default function ManageRefunds() {
                           <button
                             onClick={() => handleStatusUpdate(request.id, 'approved')}
                             disabled={updatingStatus === request.id}
-                            className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                            className="inline-flex items-center bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200"
                           >
-                            {updatingStatus === request.id ? '...' : 'Approuver'}
+                            {updatingStatus === request.id ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                            ) : (
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                            {updatingStatus === request.id ? 'Approbation...' : 'Approuver'}
                           </button>
                           <button
                             onClick={() => handleStatusUpdate(request.id, 'rejected')}
                             disabled={updatingStatus === request.id}
-                            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                            className="inline-flex items-center bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200"
                           >
-                            {updatingStatus === request.id ? '...' : 'Rejeter'}
+                            {updatingStatus === request.id ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                            ) : (
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            )}
+                            {updatingStatus === request.id ? 'Rejet...' : 'Rejeter'}
                           </button>
                         </>
                       )}
@@ -501,9 +650,16 @@ export default function ManageRefunds() {
                         <button
                           onClick={() => handleStatusUpdate(request.id, 'completed')}
                           disabled={updatingStatus === request.id}
-                          className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                          className="inline-flex items-center bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200"
                         >
-                          {updatingStatus === request.id ? '...' : 'Finaliser'}
+                          {updatingStatus === request.id ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                          ) : (
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                            </svg>
+                          )}
+                          {updatingStatus === request.id ? 'Finalisation...' : 'Finaliser'}
                         </button>
                       )}
                     </div>
