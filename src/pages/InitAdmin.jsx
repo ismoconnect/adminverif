@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { createAdmin } from '../services/adminAuthService'
 
 export default function InitAdmin() {
@@ -10,6 +11,7 @@ export default function InitAdmin() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState(null)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -205,6 +207,20 @@ export default function InitAdmin() {
               ) : (
                 'Créer l\'administrateur'
               )}
+            </button>
+          </div>
+
+          {/* Bouton retour à la connexion */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/login')}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+            >
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Retour à la connexion
             </button>
           </div>
         </form>
