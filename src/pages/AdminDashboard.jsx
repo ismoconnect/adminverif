@@ -485,9 +485,10 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
+      </div>
 
-        {/* Remboursements récents */}
-        <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
+      {/* Remboursements récents */}
+      <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden mt-8">
           <div className="px-4 py-6 sm:px-6 border-b border-gray-200">
             <h3 className="text-xl font-bold text-gray-900">5 derniers remboursements</h3>
             <p className="mt-2 text-sm text-gray-600">
@@ -631,7 +632,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </footer>
-    </div>
     </div>
     </div>
   )
