@@ -355,131 +355,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Remboursements récents */}
-          <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-4 py-6 sm:px-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">5 derniers remboursements</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Les 5 demandes de remboursement les plus récentes
-              </p>
-            </div>
-            
-            {recentRefunds.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 text-lg">Aucune demande de remboursement</p>
-                <p className="text-gray-400 text-sm mt-1">Les nouvelles demandes apparaîtront ici</p>
-              </div>
-            ) : (
-              <>
-                {/* Version desktop - Tableau */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Référence
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Client
-                        </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Montant
-                        </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Statut
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {recentRefunds.map((refund) => {
-                        const statusInfo = getRefundStatusInfo(refund.status)
-                        return (
-                          <tr key={refund.id} className="hover:bg-gray-50 transition-colors duration-200">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900 font-mono">
-                                {refund.referenceNumber}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{refund.fullName}</div>
-                              <div className="text-sm text-gray-500">{refund.email}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <div className="text-sm font-medium text-gray-900">
-                                {refund.totalAmount.toFixed(2)} €
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-                                {statusInfo.text}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatDate(refund.submittedAt)}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Version mobile - Cartes */}
-                <div className="md:hidden">
-                  <div className="space-y-3 p-4">
-                    {recentRefunds.map((refund) => {
-                      const statusInfo = getRefundStatusInfo(refund.status)
-                      return (
-                        <div key={refund.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-mono font-medium text-gray-900 mb-1 truncate" title={refund.referenceNumber}>
-                                {refund.referenceNumber}
-                              </div>
-                              <div className="text-sm font-medium text-gray-900 truncate" title={refund.fullName}>
-                                {refund.fullName}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate" title={refund.email}>
-                                {refund.email}
-                              </div>
-                            </div>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-2 flex-shrink-0 ${statusInfo.bgColor} ${statusInfo.color}`}>
-                              {statusInfo.text}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-3 rounded-lg border">
-                              <div className="text-xs text-gray-500 mb-1">Montant</div>
-                              <div className="text-lg font-bold text-gray-900">
-                                {refund.totalAmount.toFixed(2)} €
-                              </div>
-                            </div>
-                            <div className="bg-white p-3 rounded-lg border">
-                              <div className="text-xs text-gray-500 mb-1">Date</div>
-                              <div className="text-sm text-gray-900">
-                                {formatDate(refund.submittedAt)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
         {/* Tableau des soumissions */}
         <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-6 sm:px-6 border-b border-gray-200">
@@ -632,7 +507,132 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Remboursements récents */}
+        <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
+          <div className="px-4 py-6 sm:px-6 border-b border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900">5 derniers remboursements</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Les 5 demandes de remboursement les plus récentes
+            </p>
+          </div>
+          
+          {recentRefunds.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg">Aucune demande de remboursement</p>
+              <p className="text-gray-400 text-sm mt-1">Les nouvelles demandes apparaîtront ici</p>
+            </div>
+          ) : (
+            <>
+              {/* Version desktop - Tableau */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Client
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Référence
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Montant
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Statut
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {recentRefunds.map((refund) => {
+                      const statusInfo = getRefundStatusInfo(refund.status)
+                      return (
+                        <tr key={refund.id} className="hover:bg-gray-50 transition-colors duration-200">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{refund.fullName}</div>
+                            <div className="text-sm text-gray-500">{refund.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900 font-mono">
+                              {refund.referenceNumber}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {refund.totalAmount.toFixed(2)} €
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+                              {statusInfo.text}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(refund.submittedAt)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Version mobile - Cartes */}
+              <div className="md:hidden">
+                <div className="space-y-3 p-4">
+                  {recentRefunds.map((refund) => {
+                    const statusInfo = getRefundStatusInfo(refund.status)
+                    return (
+                      <div key={refund.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 mb-1 truncate" title={refund.fullName}>
+                              {refund.fullName}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate" title={refund.email}>
+                              {refund.email}
+                            </div>
+                            <div className="text-xs font-mono text-gray-600 mt-1 truncate" title={refund.referenceNumber}>
+                              {refund.referenceNumber}
+                            </div>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-2 flex-shrink-0 ${statusInfo.bgColor} ${statusInfo.color}`}>
+                            {statusInfo.text}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-white p-3 rounded-lg border">
+                            <div className="text-xs text-gray-500 mb-1">Montant</div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {refund.totalAmount.toFixed(2)} €
+                            </div>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg border">
+                            <div className="text-xs text-gray-500 mb-1">Date</div>
+                            <div className="text-sm text-gray-900">
+                              {formatDate(refund.submittedAt)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </footer>
+    </div>
     </div>
   )
 }
