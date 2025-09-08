@@ -370,10 +370,10 @@ export default function ManageRefunds() {
                           {formatDate(request.submittedAt)}
                         </td>
                         <td className="px-3 py-3 text-xs font-medium">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 items-start">
                             <Link
                               to={`/admin/refund-details/${request.id}`}
-                              className="text-blue-600 hover:text-blue-900 font-medium text-xs"
+                              className="text-blue-600 hover:text-blue-900 font-medium text-xs whitespace-nowrap"
                             >
                               Voir détails
                             </Link>
@@ -382,25 +382,25 @@ export default function ManageRefunds() {
                               <button
                                 onClick={() => handleStatusUpdate(request.id, 'processing')}
                                 disabled={updatingStatus === request.id}
-                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                               >
                                 {updatingStatus === request.id ? '...' : 'Traiter'}
                               </button>
                             )}
                             
                             {request.status === 'processing' && (
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-1 items-start">
                                 <button
                                   onClick={() => handleStatusUpdate(request.id, 'approved')}
                                   disabled={updatingStatus === request.id}
-                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                                 >
                                   {updatingStatus === request.id ? '...' : 'Approuver'}
                                 </button>
                                 <button
                                   onClick={() => handleStatusUpdate(request.id, 'rejected')}
                                   disabled={updatingStatus === request.id}
-                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium text-xs"
+                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                                 >
                                   {updatingStatus === request.id ? '...' : 'Rejeter'}
                                 </button>
@@ -411,7 +411,7 @@ export default function ManageRefunds() {
                               <button
                                 onClick={() => handleStatusUpdate(request.id, 'completed')}
                                 disabled={updatingStatus === request.id}
-                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                               >
                                 {updatingStatus === request.id ? '...' : 'Finaliser'}
                               </button>
@@ -483,10 +483,10 @@ export default function ManageRefunds() {
                           </span>
                         </td>
                         <td className="px-3 py-3 text-xs font-medium">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 items-start">
                             <Link
                               to={`/admin/refund-details/${request.id}`}
-                              className="text-blue-600 hover:text-blue-900 font-medium text-xs"
+                              className="text-blue-600 hover:text-blue-900 font-medium text-xs whitespace-nowrap"
                             >
                               Voir détails
                             </Link>
@@ -495,25 +495,25 @@ export default function ManageRefunds() {
                               <button
                                 onClick={() => handleStatusUpdate(request.id, 'processing')}
                                 disabled={updatingStatus === request.id}
-                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                               >
                                 {updatingStatus === request.id ? '...' : 'Traiter'}
                               </button>
                             )}
                             
                             {request.status === 'processing' && (
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-1 items-start">
                                 <button
                                   onClick={() => handleStatusUpdate(request.id, 'approved')}
                                   disabled={updatingStatus === request.id}
-                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                                 >
                                   {updatingStatus === request.id ? '...' : 'Approuver'}
                                 </button>
                                 <button
                                   onClick={() => handleStatusUpdate(request.id, 'rejected')}
                                   disabled={updatingStatus === request.id}
-                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium text-xs"
+                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                                 >
                                   {updatingStatus === request.id ? '...' : 'Rejeter'}
                                 </button>
@@ -524,7 +524,7 @@ export default function ManageRefunds() {
                               <button
                                 onClick={() => handleStatusUpdate(request.id, 'completed')}
                                 disabled={updatingStatus === request.id}
-                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs"
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50 font-medium text-xs whitespace-nowrap"
                               >
                                 {updatingStatus === request.id ? '...' : 'Finaliser'}
                               </button>
