@@ -135,6 +135,20 @@ export default function AdminLogin() {
               )}
             </button>
           </div>
+
+          {/* Bouton vers l'initialisation */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/init')}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+            >
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Initialiser le système
+            </button>
+          </div>
         </form>
 
         {/* Informations de sécurité */}
