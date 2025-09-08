@@ -102,19 +102,16 @@ export const deleteContactMessage = async (messageId) => {
 // Fonction pour récupérer les messages non lus
 export const getUnreadContactMessages = async () => {
   try {
-    const unreadQuery = query(
-      collection(db, CONTACT_COLLECTION),
-      where('isRead', '==', false),
-      orderBy('createdAt', 'desc')
-    )
+    // Récupérer tous les messages et filtrer côté client pour éviter l'index composite
+    const allMessages = await getAllContactMessages()
     
-    const querySnapshot = await getDocs(unreadQuery)
-    const messages = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    if (!allMessages.success) {
+      return { success: false, error: allMessages.error }
+    }
     
-    return { success: true, messages }
+    const unreadMessages = allMessages.messages.filter(message => !message.isRead)
+    
+    return { success: true, messages: unreadMessages }
   } catch (error) {
     console.error('Erreur récupération messages non lus:', error)
     return { success: false, error: 'Erreur lors de la récupération des messages non lus' }
@@ -125,16 +122,18 @@ export const getUnreadContactMessages = async () => {
 export const getContactStats = async () => {
   try {
     const allMessages = await getAllContactMessages()
-    const unreadMessages = await getUnreadContactMessages()
     
-    if (!allMessages.success || !unreadMessages.success) {
-      return { success: false, error: 'Erreur lors de la récupération des statistiques' }
+    if (!allMessages.success) {
+      return { success: false, error: allMessages.error }
     }
+    
+    const unreadCount = allMessages.messages.filter(message => !message.isRead).length
+    const readCount = allMessages.messages.length - unreadCount
     
     const stats = {
       total: allMessages.messages.length,
-      unread: unreadMessages.messages.length,
-      read: allMessages.messages.length - unreadMessages.messages.length
+      unread: unreadCount,
+      read: readCount
     }
     
     return { success: true, stats }

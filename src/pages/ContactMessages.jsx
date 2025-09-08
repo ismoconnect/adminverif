@@ -125,13 +125,27 @@ export default function ContactMessages() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Header avec statistiques */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            Messages de Contact
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div className="mb-4 sm:mb-0">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Messages de Contact
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Gérez les messages de contact reçus
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
           
           {/* Statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -236,19 +250,19 @@ export default function ContactMessages() {
               {filteredMessages.map((message) => (
                 <div 
                   key={message.id} 
-                  className={`border rounded-lg p-4 ${
+                  className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
                     message.isRead 
                       ? 'border-gray-200 bg-gray-50' 
                       : 'border-orange-200 bg-orange-50'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 mb-3">
                         <h4 className="text-sm font-medium text-gray-900">
                           {message.name || 'Anonyme'}
                         </h4>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${
                           message.isRead 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-yellow-100 text-yellow-800'
@@ -257,54 +271,89 @@ export default function ContactMessages() {
                         </span>
                       </div>
                       
-                      <p className="text-sm text-gray-600 mb-2">
-                        <strong>Email:</strong> {message.email}
-                      </p>
-                      
-                      {message.phone && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Téléphone:</strong> {message.phone}
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <p>
+                          <strong>Email:</strong> 
+                          <span className="ml-1 break-all">{message.email}</span>
                         </p>
-                      )}
-                      
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>Sujet:</strong> {message.subject || 'Aucun sujet'}
-                      </p>
-                      
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>Message:</strong> {message.message}
-                      </p>
-                      
-                      <p className="text-xs text-gray-500">
-                        Reçu le: {formatDate(message.createdAt)}
-                      </p>
+                        
+                        {message.phone && (
+                          <p>
+                            <strong>Téléphone:</strong> 
+                            <span className="ml-1">{message.phone}</span>
+                          </p>
+                        )}
+                        
+                        <p>
+                          <strong>Sujet:</strong> 
+                          <span className="ml-1">{message.subject || 'Aucun sujet'}</span>
+                        </p>
+                        
+                        <div>
+                          <strong>Message:</strong>
+                          <p className="mt-1 text-gray-700 bg-white p-2 rounded border text-sm">
+                            {message.message}
+                          </p>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500">
+                          Reçu le: {formatDate(message.createdAt)}
+                        </p>
+                      </div>
                     </div>
                     
-                    <div className="flex space-x-2 ml-4">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 sm:ml-4">
                       {!message.isRead ? (
                         <button
                           onClick={() => handleMarkAsRead(message.id)}
                           disabled={actionLoading === message.id}
-                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                          className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-colors"
                         >
-                          {actionLoading === message.id ? '...' : 'Marquer lu'}
+                          {actionLoading === message.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Marquer lu
+                            </>
+                          )}
                         </button>
                       ) : (
                         <button
                           onClick={() => handleMarkAsUnread(message.id)}
                           disabled={actionLoading === message.id}
-                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50"
+                          className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 transition-colors"
                         >
-                          {actionLoading === message.id ? '...' : 'Marquer non lu'}
+                          {actionLoading === message.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Marquer non lu
+                            </>
+                          )}
                         </button>
                       )}
                       
                       <button
                         onClick={() => handleDelete(message.id)}
                         disabled={actionLoading === message.id}
-                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                        className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                       >
-                        {actionLoading === message.id ? '...' : 'Supprimer'}
+                        {actionLoading === message.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Supprimer
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
