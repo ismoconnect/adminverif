@@ -340,9 +340,9 @@ export default function Submissions() {
                         </div>
                       </div>
                     </div>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(submission.status)}`}>
-                      <span className="mr-1">{getStatusIcon(submission.status)}</span>
-                      {getStatusText(submission.status)}
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(submission.status)} whitespace-nowrap`}>
+                      <span className="mr-0.5">{getStatusIcon(submission.status)}</span>
+                      <span className="truncate">{getStatusText(submission.status)}</span>
                     </span>
                   </div>
 

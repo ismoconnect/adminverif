@@ -437,7 +437,7 @@ export default function ManageRefunds() {
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color}`}>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color} whitespace-nowrap`}>
                             <span className="mr-1 text-xs">{statusInfo.icon}</span>
                             {statusInfo.text}
                           </span>
@@ -553,7 +553,7 @@ export default function ManageRefunds() {
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color}`}>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.color} whitespace-nowrap`}>
                             <span className="mr-1 text-xs">{statusInfo.icon}</span>
                             {statusInfo.text}
                           </span>
@@ -632,7 +632,7 @@ export default function ManageRefunds() {
                           {request.email}
                         </div>
                       </div>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-2 flex-shrink-0 ${statusInfo.bgColor} ${statusInfo.color}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold ml-2 flex-shrink-0 ${statusInfo.bgColor} ${statusInfo.color} whitespace-nowrap`}>
                         <span className="mr-1 text-xs">{statusInfo.icon}</span>
                         {statusInfo.text}
                       </span>

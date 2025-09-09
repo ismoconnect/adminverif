@@ -458,8 +458,8 @@ export default function AdminDashboard() {
                             Ref: {submission.referenceNumber || submission.id}
                           </p>
                         </div>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(submission.status)}`}>
-                          {getStatusText(submission.status)}
+                        <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(submission.status)} whitespace-nowrap`}>
+                          <span className="truncate">{getStatusText(submission.status)}</span>
                         </span>
                       </div>
                       
