@@ -447,20 +447,22 @@ export default function AdminDashboard() {
                   {submissions.map((submission) => (
                     <div key={submission.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                       <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-gray-900">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-gray-900 truncate">
                             {getClientName(submission)}
                           </h4>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 mt-1 truncate">
                             {submission.email}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-gray-400 mt-1 truncate">
                             Ref: {submission.referenceNumber || submission.id}
                           </p>
                         </div>
-                        <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(submission.status)} whitespace-nowrap`}>
-                          <span className="truncate">{getStatusText(submission.status)}</span>
-                        </span>
+                        <div className="ml-2 flex-shrink-0">
+                          <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(submission.status)} whitespace-nowrap`}>
+                            <span className="truncate">{getStatusText(submission.status)}</span>
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4 text-sm">
