@@ -9,6 +9,11 @@ export default function ManageRefunds() {
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [updatingStatus, setUpdatingStatus] = useState(null)
+  
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [totalItems, setTotalItems] = useState(0)
 
   useEffect(() => {
     fetchRefundRequests()
@@ -17,10 +22,11 @@ export default function ManageRefunds() {
   const fetchRefundRequests = async () => {
     try {
       setLoading(true)
-      const result = await FirestoreService.getAllRefundRequests(100)
+      const result = await FirestoreService.getAllRefundRequests(1000) // Récupérer plus d'éléments pour la pagination côté client
       
       if (result.success) {
         setRefundRequests(result.data)
+        setTotalItems(result.data.length)
       } else {
         toast.error('Erreur lors du chargement des demandes')
       }
@@ -111,15 +117,59 @@ export default function ManageRefunds() {
     })
   }
 
-  const filteredRequests = refundRequests.filter(request => {
-    const matchesFilter = filter === 'all' || request.status === filter
-    const matchesSearch = searchTerm === '' || 
-      request.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    return matchesFilter && matchesSearch
-  })
+  // Fonctions de pagination
+  const getFilteredAndSearchedData = () => {
+    let filtered = refundRequests
+
+    // Appliquer le filtre de statut
+    if (filter !== 'all') {
+      filtered = filtered.filter(request => request.status === filter)
+    }
+
+    // Appliquer la recherche
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(request => 
+        request.referenceNumber?.toLowerCase().includes(term) ||
+        request.fullName?.toLowerCase().includes(term) ||
+        request.email?.toLowerCase().includes(term) ||
+        request.amount?.toString().includes(term)
+      )
+    }
+
+    return filtered
+  }
+
+  const getPaginatedData = () => {
+    const filtered = getFilteredAndSearchedData()
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filtered.slice(startIndex, endIndex)
+  }
+
+  const getTotalPages = () => {
+    const filtered = getFilteredAndSearchedData()
+    return Math.ceil(filtered.length / itemsPerPage)
+  }
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Reset à la première page
+  }
+
+  // Reset pagination quand les filtres changent
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, searchTerm])
+
+  // Utiliser la nouvelle logique de filtrage avec pagination
+  const filteredRequests = getFilteredAndSearchedData()
+  const paginatedRequests = getPaginatedData()
+  const totalPages = getTotalPages()
 
   const getStatusCounts = () => {
     const counts = {
@@ -333,7 +383,7 @@ export default function ManageRefunds() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredRequests.map((request) => {
+                  {paginatedRequests.map((request) => {
                     const statusInfo = getStatusInfo(request.status)
                     return (
                       <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-200">
@@ -448,7 +498,7 @@ export default function ManageRefunds() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredRequests.map((request) => {
+                  {paginatedRequests.map((request) => {
                     const statusInfo = getStatusInfo(request.status)
                     return (
                       <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-200">
@@ -677,6 +727,112 @@ export default function ManageRefunds() {
                 </div>
                 <p className="text-gray-500 text-lg">Aucune demande trouvée</p>
                 <p className="text-gray-400 text-sm mt-1">Essayez de modifier vos filtres de recherche</p>
+              </div>
+            )}
+
+            {/* Contrôles de pagination */}
+            {filteredRequests.length > 0 && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Précédent
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Suivant
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm text-gray-700">
+                      Affichage de{' '}
+                      <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+                      {' '}à{' '}
+                      <span className="font-medium">
+                        {Math.min(currentPage * itemsPerPage, filteredRequests.length)}
+                      </span>
+                      {' '}sur{' '}
+                      <span className="font-medium">{filteredRequests.length}</span>
+                      {' '}résultats
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+                        Par page:
+                      </label>
+                      <select
+                        id="itemsPerPage"
+                        value={itemsPerPage}
+                        onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                        className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Précédent</span>
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      
+                      {/* Numéros de page */}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === pageNumber
+                                ? 'z-10 bg-orange-50 border-orange-500 text-orange-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      })}
+                      
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Suivant</span>
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permettre l'écriture pour les soumissions (sans authentification)
+    match /coupon_submissions/{document} {
+      allow create: if true;  // Permettre la création
+      allow read: if true;    // Permettre la lecture
+      allow update: if true;  // AJOUTEZ CETTE LIGNE pour permettre la mise à jour
+      allow delete: if false; // Interdire la suppression
+    }
+    
+    // Permettre l'écriture pour les messages de contact
+    match /contact_messages/{document} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if true;  // MODIFIÉ: Permettre la mise à jour et suppression pour les admins
+    }
+    
+    // NOUVELLES RÈGLES POUR LES REMBOURSEMENTS
+    match /refund_requests/{document} {
+      allow create: if true;  // Permettre la création des demandes de remboursement
+      allow read: if true;    // Permettre la lecture
+      allow update: if true;  // Permettre la mise à jour (pour l'admin)
+      allow delete: if false; // Interdire la suppression
+    }
+    
+    // Règles pour la collection des administrateurs
+    match /admins/{document} {
+      allow read, write: if true;  // Accès complet pour l'admin
+    }
+    
+    // Règles pour la collection des soumissions (accès admin)
+    match /submissions/{document} {
+      allow read, write: if true;  // Accès complet pour l'admin
+    }
+    
+    // Règles par défaut
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
