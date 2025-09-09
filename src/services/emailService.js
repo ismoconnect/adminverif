@@ -1,4 +1,5 @@
 import emailjs from '@emailjs/browser'
+import { PDFGenerationService } from './pdfGenerationService'
 
 // Configuration EmailJS
 const EMAILJS_CONFIG = {
@@ -26,15 +27,37 @@ export class EmailService {
    */
   static async sendVerificationEmail(submissionData) {
     try {
+      // Générer le PDF d'attestation
+      let attestationUrl = ''
+      try {
+        const pdfData = {
+          referenceNumber: submissionData.referenceNumber,
+          customerName: submissionData.customerName,
+          customerEmail: submissionData.customerEmail,
+          amount: submissionData.amount,
+          type: submissionData.type,
+          coupons: submissionData.coupons || [],
+          verificationDate: new Date(),
+          verifiedBy: submissionData.verifiedBy || 'Administrateur'
+        }
+        
+        attestationUrl = await PDFGenerationService.generateDownloadUrl(pdfData)
+        console.log('PDF d\'attestation généré:', attestationUrl)
+      } catch (pdfError) {
+        console.error('Erreur génération PDF:', pdfError)
+        // Continuer sans le PDF si la génération échoue
+      }
+
       const templateParams = {
-        to_email: submissionData.customerEmail,
-        to_name: submissionData.customerName || 'Client',
+        email: submissionData.customerEmail,
+        name: submissionData.customerName || 'Client',
+        title: `Vérification de votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} - Référence: ${submissionData.referenceNumber || 'N/A'}`,
+        message: `Félicitations ! Votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} d'un montant de ${submissionData.amount || '0'}€ a été vérifié avec succès.`,
         reference_number: submissionData.referenceNumber || 'N/A',
         amount: submissionData.amount || '0',
         submission_type: submissionData.type === 'coupon' ? 'Coupon' : 'Carte cadeau',
         status: 'Vérifié',
-        message: `Félicitations ! Votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} a été vérifié avec succès.`,
-        subject: 'Vérification de votre soumission - MyVerif'
+        attestation_url: attestationUrl || '#' // URL du PDF ou lien par défaut
       }
 
       console.log('Paramètres email:', templateParams)
@@ -98,14 +121,14 @@ export class EmailService {
   static async sendRejectionEmail(submissionData, reason = '') {
     try {
       const templateParams = {
-        to_email: submissionData.customerEmail,
-        to_name: submissionData.customerName || 'Client',
+        email: submissionData.customerEmail,
+        name: submissionData.customerName || 'Client',
+        title: `Rejet de votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} - Référence: ${submissionData.referenceNumber || 'N/A'}`,
+        message: `Malheureusement, votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} d'un montant de ${submissionData.amount || '0'}€ n'a pas pu être vérifié.${reason ? ` Raison: ${reason}` : ''}`,
         reference_number: submissionData.referenceNumber || 'N/A',
         amount: submissionData.amount || '0',
         submission_type: submissionData.type === 'coupon' ? 'Coupon' : 'Carte cadeau',
-        status: 'Rejeté',
-        message: `Malheureusement, votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} n'a pas pu être vérifié.${reason ? ` Raison: ${reason}` : ''}`,
-        subject: 'Statut de votre soumission - MyVerif'
+        status: 'Rejeté'
       }
 
       console.log('Paramètres email rejet:', templateParams)
@@ -139,14 +162,14 @@ export class EmailService {
   static async sendRefundApprovalEmail(refundData) {
     try {
       const templateParams = {
-        to_email: refundData.customerEmail,
-        to_name: refundData.customerName || 'Client',
+        email: refundData.customerEmail,
+        name: refundData.customerName || 'Client',
+        title: `Remboursement approuvé - Référence: ${refundData.referenceNumber || 'N/A'}`,
+        message: `Votre demande de remboursement a été approuvée. Le montant de ${refundData.amount || '0'}€ sera traité selon votre méthode de remboursement choisie.`,
         reference_number: refundData.referenceNumber || 'N/A',
         amount: refundData.amount || '0',
         submission_type: 'Remboursement',
-        status: 'Approuvé',
-        message: `Votre demande de remboursement a été approuvée. Le montant de ${refundData.amount}€ sera traité selon votre méthode de remboursement choisie.`,
-        subject: 'Remboursement approuvé - MyVerif'
+        status: 'Approuvé'
       }
 
       console.log('Paramètres email remboursement:', templateParams)
@@ -179,14 +202,14 @@ export class EmailService {
   static async testEmailConfiguration() {
     try {
       const testParams = {
-        to_email: 'test@example.com',
-        to_name: 'Test',
+        email: 'test@example.com',
+        name: 'Test',
+        title: 'Test EmailJS - MyVerif',
+        message: 'Ceci est un email de test pour vérifier la configuration EmailJS.',
         reference_number: 'TEST-001',
         amount: '0.00',
         submission_type: 'Test',
-        status: 'Test',
-        message: 'Ceci est un email de test pour vérifier la configuration EmailJS.',
-        subject: 'Test EmailJS - MyVerif'
+        status: 'Test'
       }
 
       console.log('Test EmailJS avec paramètres:', testParams)
@@ -233,16 +256,16 @@ export class EmailService {
   static validateEmailParams(params) {
     const errors = []
     
-    if (!params.to_email || !params.to_email.includes('@')) {
+    if (!params.email || !params.email.includes('@')) {
       errors.push('Email destinataire invalide')
     }
     
-    if (!params.to_name || params.to_name.trim() === '') {
+    if (!params.name || params.name.trim() === '') {
       errors.push('Nom destinataire requis')
     }
     
-    if (!params.reference_number || params.reference_number.trim() === '') {
-      errors.push('Numéro de référence requis')
+    if (!params.title || params.title.trim() === '') {
+      errors.push('Titre requis')
     }
     
     return {
