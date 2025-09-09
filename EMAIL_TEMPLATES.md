@@ -144,6 +144,38 @@
 5. Configurez les variables dans la section "Settings"
 6. Testez le template avec des données d'exemple
 
+## Résolution de l'erreur 422
+
+L'erreur 422 indique que les paramètres envoyés ne correspondent pas à ceux attendus par le template EmailJS.
+
+### Vérifications à effectuer :
+
+1. **Variables du template** : Assurez-vous que votre template EmailJS utilise exactement ces variables :
+   - `{{to_email}}`
+   - `{{to_name}}`
+   - `{{reference_number}}`
+   - `{{amount}}`
+   - `{{submission_type}}`
+   - `{{status}}`
+   - `{{message}}`
+   - `{{subject}}`
+
+2. **Configuration du service** :
+   - Service ID : `service_rnqc9zh`
+   - Template ID : `template_asgn9e8`
+   - Public Key : `6RR8pBaWS0fFEa_tG`
+
+3. **Test de configuration** :
+   ```javascript
+   // Dans la console du navigateur
+   EmailService.testEmailConfiguration()
+   ```
+
+4. **Vérification des logs** :
+   - Ouvrez la console du navigateur
+   - Regardez les logs "Paramètres email:" pour vérifier les données envoyées
+   - Vérifiez que toutes les variables sont présentes et non vides
+
 ## Variables de test
 
 Pour tester le template, utilisez ces valeurs :

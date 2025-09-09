@@ -29,12 +29,24 @@ export class EmailService {
       const templateParams = {
         to_email: submissionData.customerEmail,
         to_name: submissionData.customerName || 'Client',
-        reference_number: submissionData.referenceNumber,
-        amount: submissionData.amount,
+        reference_number: submissionData.referenceNumber || 'N/A',
+        amount: submissionData.amount || '0',
         submission_type: submissionData.type === 'coupon' ? 'Coupon' : 'Carte cadeau',
         status: 'Vérifié',
         message: `Félicitations ! Votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} a été vérifié avec succès.`,
         subject: 'Vérification de votre soumission - MyVerif'
+      }
+
+      console.log('Paramètres email:', templateParams)
+
+      // Valider les paramètres
+      const validation = this.validateEmailParams(templateParams)
+      if (!validation.isValid) {
+        console.error('Paramètres email invalides:', validation.errors)
+        return { 
+          success: false, 
+          message: `Paramètres invalides: ${validation.errors.join(', ')}` 
+        }
       }
 
       const result = await emailjs.send(
@@ -51,9 +63,23 @@ export class EmailService {
 
     } catch (error) {
       console.error('Erreur envoi email de vérification:', error)
-      return { 
-        success: false, 
-        message: 'Erreur lors de l\'envoi de l\'email de vérification' 
+      
+      // Gestion spécifique des erreurs EmailJS
+      if (error.status === 422) {
+        return { 
+          success: false, 
+          message: 'Erreur de validation des paramètres email. Vérifiez la configuration du template.' 
+        }
+      } else if (error.status === 400) {
+        return { 
+          success: false, 
+          message: 'Erreur de configuration EmailJS. Vérifiez les identifiants de service.' 
+        }
+      } else {
+        return { 
+          success: false, 
+          message: `Erreur lors de l'envoi de l'email de vérification: ${error.text || error.message}` 
+        }
       }
     }
   }
@@ -74,13 +100,15 @@ export class EmailService {
       const templateParams = {
         to_email: submissionData.customerEmail,
         to_name: submissionData.customerName || 'Client',
-        reference_number: submissionData.referenceNumber,
-        amount: submissionData.amount,
+        reference_number: submissionData.referenceNumber || 'N/A',
+        amount: submissionData.amount || '0',
         submission_type: submissionData.type === 'coupon' ? 'Coupon' : 'Carte cadeau',
         status: 'Rejeté',
         message: `Malheureusement, votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} n'a pas pu être vérifié.${reason ? ` Raison: ${reason}` : ''}`,
         subject: 'Statut de votre soumission - MyVerif'
       }
+
+      console.log('Paramètres email rejet:', templateParams)
 
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
@@ -113,13 +141,15 @@ export class EmailService {
       const templateParams = {
         to_email: refundData.customerEmail,
         to_name: refundData.customerName || 'Client',
-        reference_number: refundData.referenceNumber,
-        amount: refundData.amount,
+        reference_number: refundData.referenceNumber || 'N/A',
+        amount: refundData.amount || '0',
         submission_type: 'Remboursement',
         status: 'Approuvé',
         message: `Votre demande de remboursement a été approuvée. Le montant de ${refundData.amount}€ sera traité selon votre méthode de remboursement choisie.`,
         subject: 'Remboursement approuvé - MyVerif'
       }
+
+      console.log('Paramètres email remboursement:', templateParams)
 
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
@@ -159,6 +189,8 @@ export class EmailService {
         subject: 'Test EmailJS - MyVerif'
       }
 
+      console.log('Test EmailJS avec paramètres:', testParams)
+
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
         EMAILJS_CONFIG.templateId.verified,
@@ -173,10 +205,49 @@ export class EmailService {
 
     } catch (error) {
       console.error('Erreur test EmailJS:', error)
-      return { 
-        success: false, 
-        message: 'Erreur lors du test de la configuration EmailJS' 
+      
+      if (error.status === 422) {
+        return { 
+          success: false, 
+          message: 'Erreur 422: Vérifiez que le template EmailJS utilise les bonnes variables' 
+        }
+      } else if (error.status === 400) {
+        return { 
+          success: false, 
+          message: 'Erreur 400: Vérifiez le Service ID et Template ID dans EmailJS' 
+        }
+      } else {
+        return { 
+          success: false, 
+          message: `Erreur test EmailJS: ${error.text || error.message}` 
+        }
       }
+    }
+  }
+
+  /**
+   * Valide les paramètres avant envoi
+   * @param {Object} params - Paramètres à valider
+   * @returns {Object} - {isValid: boolean, errors: string[]}
+   */
+  static validateEmailParams(params) {
+    const errors = []
+    
+    if (!params.to_email || !params.to_email.includes('@')) {
+      errors.push('Email destinataire invalide')
+    }
+    
+    if (!params.to_name || params.to_name.trim() === '') {
+      errors.push('Nom destinataire requis')
+    }
+    
+    if (!params.reference_number || params.reference_number.trim() === '') {
+      errors.push('Numéro de référence requis')
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
     }
   }
 }
