@@ -405,8 +405,73 @@ export default function Submissions() {
 
           {/* Pagination */}
           {filteredSubmissions.length > itemsPerPage && (
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
+            <div className="bg-white px-4 py-4 border-t border-gray-200">
+              {/* Mobile Pagination */}
+              <div className="lg:hidden">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs text-gray-600">
+                    {startIndex + 1}-{Math.min(endIndex, filteredSubmissions.length)} sur {filteredSubmissions.length}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Page {currentPage} sur {totalPages}
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Précédent
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                      let page;
+                      if (totalPages <= 3) {
+                        page = i + 1;
+                      } else if (currentPage <= 2) {
+                        page = i + 1;
+                      } else if (currentPage >= totalPages - 1) {
+                        page = totalPages - 2 + i;
+                      } else {
+                        page = currentPage - 1 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                            page === currentPage
+                              ? 'bg-orange-500 text-white'
+                              : 'text-gray-700 bg-gray-100 border border-gray-300 hover:bg-gray-200'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-1"
+                  >
+                    Suivant
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop Pagination */}
+              <div className="hidden lg:flex items-center justify-between">
                 <div className="text-sm text-gray-700">
                   Affichage de {startIndex + 1} à {Math.min(endIndex, filteredSubmissions.length)} sur {filteredSubmissions.length} soumissions
                 </div>
