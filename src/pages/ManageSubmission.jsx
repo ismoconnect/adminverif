@@ -135,9 +135,7 @@ export default function ManageSubmission() {
             customerName: submission.fullName,
             referenceNumber: submission.referenceNumber,
             amount: submission.totalAmount,
-            type: submission.type || 'coupon',
-            coupons: submission.coupons || [],
-            verifiedBy: admin?.username || 'Administrateur'
+            type: submission.type || 'coupon'
           })
           
           if (emailResult.success) {

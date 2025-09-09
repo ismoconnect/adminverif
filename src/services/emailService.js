@@ -1,12 +1,11 @@
 import emailjs from '@emailjs/browser'
-import { PDFGenerationService } from './pdfGenerationService'
 
 // Configuration EmailJS
 const EMAILJS_CONFIG = {
   serviceId: 'service_rnqc9zh',
   templateId: {
     verified: 'template_asgn9e8', // Template pour statut vérifié
-    rejected: 'template_asgn9e8'  // Template pour statut rejeté (même template, contenu différent)
+    rejected: 'template_7nr83rf'  // Template pour statut rejeté
   },
   publicKey: '6RR8pBaWS0fFEa_tG'
 }
@@ -27,40 +26,20 @@ export class EmailService {
    */
   static async sendVerificationEmail(submissionData) {
     try {
-      // Générer le PDF d'attestation
-      let attestationUrl = ''
-      try {
-        const pdfData = {
-          referenceNumber: submissionData.referenceNumber,
-          customerName: submissionData.customerName,
-          customerEmail: submissionData.customerEmail,
-          amount: submissionData.amount,
-          type: submissionData.type,
-          coupons: submissionData.coupons || [],
-          verificationDate: new Date(),
-          verifiedBy: submissionData.verifiedBy || 'Administrateur'
-        }
-        
-        attestationUrl = await PDFGenerationService.generateDownloadUrl(pdfData)
-        console.log('PDF d\'attestation généré:', attestationUrl)
-      } catch (pdfError) {
-        console.error('Erreur génération PDF:', pdfError)
-        // Continuer sans le PDF si la génération échoue
-      }
-
       const templateParams = {
         email: submissionData.customerEmail,
         name: submissionData.customerName || 'Client',
         title: `Vérification de votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} - Référence: ${submissionData.referenceNumber || 'N/A'}`,
-        message: `Félicitations ! Votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} d'un montant de ${submissionData.amount || '0'}€ a été vérifié avec succès.`,
+        message: `Votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} d'un montant de ${submissionData.amount || '0'}€ a été vérifié avec succès.`,
         reference_number: submissionData.referenceNumber || 'N/A',
         amount: submissionData.amount || '0',
         submission_type: submissionData.type === 'coupon' ? 'Coupon' : 'Carte cadeau',
-        status: 'Vérifié',
-        attestation_url: attestationUrl || '#' // URL du PDF ou lien par défaut
+        status: 'Vérifié'
       }
 
-      console.log('Paramètres email:', templateParams)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Paramètres email:', templateParams)
+      }
 
       // Valider les paramètres
       const validation = this.validateEmailParams(templateParams)
@@ -78,7 +57,9 @@ export class EmailService {
         templateParams
       )
 
-      console.log('Email de vérification envoyé:', result)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Email de vérification envoyé:', result)
+      }
       return { 
         success: true, 
         message: 'Email de vérification envoyé avec succès' 
@@ -124,14 +105,16 @@ export class EmailService {
         email: submissionData.customerEmail,
         name: submissionData.customerName || 'Client',
         title: `Rejet de votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} - Référence: ${submissionData.referenceNumber || 'N/A'}`,
-        message: `Malheureusement, votre ${submissionData.type === 'coupon' ? 'coupon' : 'carte cadeau'} d'un montant de ${submissionData.amount || '0'}€ n'a pas pu être vérifié.${reason ? ` Raison: ${reason}` : ''}`,
+        message: reason || 'Votre soumission ne répond pas aux critères de vérification.',
         reference_number: submissionData.referenceNumber || 'N/A',
         amount: submissionData.amount || '0',
         submission_type: submissionData.type === 'coupon' ? 'Coupon' : 'Carte cadeau',
         status: 'Rejeté'
       }
 
-      console.log('Paramètres email rejet:', templateParams)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Paramètres email rejet:', templateParams)
+      }
 
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
@@ -139,7 +122,9 @@ export class EmailService {
         templateParams
       )
 
-      console.log('Email de rejet envoyé:', result)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Email de rejet envoyé:', result)
+      }
       return { 
         success: true, 
         message: 'Email de rejet envoyé avec succès' 
@@ -172,7 +157,9 @@ export class EmailService {
         status: 'Approuvé'
       }
 
-      console.log('Paramètres email remboursement:', templateParams)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Paramètres email remboursement:', templateParams)
+      }
 
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
@@ -180,7 +167,9 @@ export class EmailService {
         templateParams
       )
 
-      console.log('Email de remboursement approuvé envoyé:', result)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Email de remboursement approuvé envoyé:', result)
+      }
       return { 
         success: true, 
         message: 'Email de remboursement approuvé envoyé avec succès' 
