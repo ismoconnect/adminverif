@@ -14,6 +14,8 @@ export default function ContactMessages() {
   const [actionLoading, setActionLoading] = useState(null)
   const [selectedMessage, setSelectedMessage] = useState(null)
   const [filter, setFilter] = useState('all') // 'all', 'read', 'unread'
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [messageToDelete, setMessageToDelete] = useState(null)
 
   useEffect(() => {
     loadMessages()
@@ -75,23 +77,34 @@ export default function ContactMessages() {
     }
   }
 
-  const handleDelete = async (messageId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
-      return
-    }
+  const handleDeleteClick = (messageId) => {
+    const message = messages.find(m => m.id === messageId)
+    setMessageToDelete(message)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!messageToDelete) return
     
-    setActionLoading(messageId)
+    setActionLoading(messageToDelete.id)
     try {
-      const result = await deleteContactMessage(messageId)
+      const result = await deleteContactMessage(messageToDelete.id)
       if (result.success) {
         await loadMessages()
         await loadStats()
+        setShowDeleteModal(false)
+        setMessageToDelete(null)
       }
     } catch (error) {
       console.error('Erreur suppression:', error)
     } finally {
       setActionLoading(null)
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setMessageToDelete(null)
   }
 
   const formatDate = (timestamp) => {
@@ -340,7 +353,7 @@ export default function ContactMessages() {
                       )}
                       
                       <button
-                        onClick={() => handleDelete(message.id)}
+                        onClick={() => handleDeleteClick(message.id)}
                         disabled={actionLoading === message.id}
                         className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                       >
@@ -363,6 +376,67 @@ export default function ContactMessages() {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mt-4">
+                Confirmer la suppression
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Êtes-vous sûr de vouloir supprimer ce message de contact ?
+                </p>
+                {messageToDelete && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md text-left">
+                    <p className="text-sm font-medium text-gray-900">
+                      De: {messageToDelete.name || 'Anonyme'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Email: {messageToDelete.email}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Sujet: {messageToDelete.subject || 'Aucun sujet'}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-red-600 mt-2 font-medium">
+                  Cette action est irréversible.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 px-4 py-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={actionLoading === messageToDelete?.id}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
+                >
+                  {actionLoading === messageToDelete?.id ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Suppression...
+                    </>
+                  ) : (
+                    'Supprimer'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
