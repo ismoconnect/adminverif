@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FirestoreService } from '../services/firestoreService'
+import { EmailService } from '../services/emailService'
 import { toast } from 'react-toastify'
 
 export default function ManageRefunds() {
@@ -45,7 +46,32 @@ export default function ManageRefunds() {
       const result = await FirestoreService.updateRefundRequestStatus(requestId, newStatus, notes)
       
       if (result.success) {
-        toast.success('Statut mis à jour avec succès')
+        // Trouver la demande de remboursement pour envoyer l'email
+        const refundRequest = refundRequests.find(req => req.id === requestId)
+        
+        // Envoyer un email si le remboursement est approuvé
+        if (newStatus === 'approved' && refundRequest?.customerEmail) {
+          try {
+            const emailResult = await EmailService.sendRefundApprovalEmail({
+              customerEmail: refundRequest.customerEmail,
+              customerName: refundRequest.customerName,
+              referenceNumber: refundRequest.referenceNumber,
+              amount: refundRequest.amount
+            })
+            
+            if (emailResult.success) {
+              toast.success('Statut mis à jour et email envoyé avec succès')
+            } else {
+              toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
+            }
+          } catch (emailError) {
+            console.error('Erreur envoi email:', emailError)
+            toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
+          }
+        } else {
+          toast.success('Statut mis à jour avec succès')
+        }
+        
         fetchRefundRequests() // Recharger les données
       } else {
         toast.error('Erreur lors de la mise à jour')

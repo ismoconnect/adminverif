@@ -4,6 +4,8 @@ import { useAdminAuth } from '../contexts/AdminAuthContext'
 import { db } from '../lib/firebase'
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import ConfirmationDialog from '../components/ConfirmationDialog'
+import { EmailService } from '../services/emailService'
+import { toast } from 'react-toastify'
 
 // Icônes SVG améliorées
 const Clock = () => (
@@ -72,6 +74,7 @@ export default function ManageSubmission() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [couponStatuses, setCouponStatuses] = useState({})
   const [updatingCoupon, setUpdatingCoupon] = useState(null)
+  const [rejectionReason, setRejectionReason] = useState('')
 
   useEffect(() => {
     fetchSubmission()
@@ -124,9 +127,53 @@ export default function ManageSubmission() {
         updatedAt: new Date()
       }))
       
+      // Envoyer un email selon le nouveau statut
+      if (newStatus === 'verified' && submission?.email) {
+        try {
+          const emailResult = await EmailService.sendVerificationEmail({
+            customerEmail: submission.email,
+            customerName: submission.fullName,
+            referenceNumber: submission.referenceNumber,
+            amount: submission.totalAmount,
+            type: submission.type || 'coupon'
+          })
+          
+          if (emailResult.success) {
+            toast.success('Statut mis à jour et email envoyé avec succès')
+          } else {
+            toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
+          }
+        } catch (emailError) {
+          console.error('Erreur envoi email:', emailError)
+          toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
+        }
+      } else if (newStatus === 'rejected' && submission?.email) {
+        try {
+          const emailResult = await EmailService.sendRejectionEmail({
+            customerEmail: submission.email,
+            customerName: submission.fullName,
+            referenceNumber: submission.referenceNumber,
+            amount: submission.totalAmount,
+            type: submission.type || 'coupon'
+          }, rejectionReason)
+          
+          if (emailResult.success) {
+            toast.success('Statut mis à jour et email envoyé avec succès')
+          } else {
+            toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
+          }
+        } catch (emailError) {
+          console.error('Erreur envoi email:', emailError)
+          toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
+        }
+      } else {
+        toast.success('Statut mis à jour avec succès')
+      }
+      
       setShowSuccessDialog(true)
     } catch (error) {
       console.error('Erreur mise à jour:', error)
+      toast.error('Erreur lors de la mise à jour du statut')
     } finally {
       setUpdating(false)
     }
