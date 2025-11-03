@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { authenticateAdmin, validateAdminSession } from '../services/adminAuthService'
 
-const AdminAuthContext = createContext()
+const AdminAuthContext = createContext(null)
 
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext)
-  if (!context) {
+  if (context === null || context === undefined) {
     throw new Error('useAdminAuth doit être utilisé dans un AdminAuthProvider')
   }
   return context

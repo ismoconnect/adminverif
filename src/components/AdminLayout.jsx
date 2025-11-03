@@ -1,8 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminSidebar from './AdminSidebar'
+import { initializeNotificationListeners } from '../services/notificationService'
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Initialiser les écouteurs de notifications
+  useEffect(() => {
+    const unsubscribe = initializeNotificationListeners()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [])
 
   return (
     <div className="min-h-screen flex bg-gray-100">

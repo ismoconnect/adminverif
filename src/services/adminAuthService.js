@@ -16,30 +16,97 @@ import {
 const ADMIN_COLLECTION = 'admins'
 
 // Fonction pour vérifier les identifiants admin
-export const authenticateAdmin = async (username, password) => {
+export const authenticateAdmin = async (usernameOrEmail, password) => {
   try {
-    // Rechercher l'admin par nom d'utilisateur
-    const adminQuery = query(
-      collection(db, ADMIN_COLLECTION),
-      where('username', '==', username),
-      where('isActive', '==', true)
-    )
+    let adminDoc = null
+    let adminData = null
     
-    const querySnapshot = await getDocs(adminQuery)
+    // Méthode 1 : Essayer avec une requête sur username
+    try {
+      const usernameQuery = query(
+        collection(db, ADMIN_COLLECTION),
+        where('username', '==', usernameOrEmail)
+      )
+      const usernameSnapshot = await getDocs(usernameQuery)
+      
+      if (!usernameSnapshot.empty) {
+        adminDoc = usernameSnapshot.docs[0]
+        adminData = adminDoc.data()
+      }
+    } catch (usernameError) {
+      console.warn('Erreur requête username:', usernameError)
+      // Continuer avec la méthode suivante
+    }
     
-    if (querySnapshot.empty) {
+    // Méthode 2 : Si pas trouvé, essayer avec email
+    if (!adminDoc) {
+      try {
+        const emailQuery = query(
+          collection(db, ADMIN_COLLECTION),
+          where('email', '==', usernameOrEmail)
+        )
+        const emailSnapshot = await getDocs(emailQuery)
+        
+        if (!emailSnapshot.empty) {
+          adminDoc = emailSnapshot.docs[0]
+          adminData = adminDoc.data()
+        }
+      } catch (emailError) {
+        console.warn('Erreur requête email:', emailError)
+        // Continuer avec la méthode de fallback
+      }
+    }
+    
+    // Méthode 3 : Fallback - récupérer tous les admins et filtrer côté client
+    if (!adminDoc) {
+      try {
+        console.log('Utilisation du fallback: récupération de tous les admins')
+        const allAdminsQuery = query(collection(db, ADMIN_COLLECTION))
+        const allAdminsSnapshot = await getDocs(allAdminsQuery)
+        
+        // Chercher manuellement dans les résultats
+        for (const doc of allAdminsSnapshot.docs) {
+          const data = doc.data()
+          if (data.username === usernameOrEmail || data.email === usernameOrEmail) {
+            adminDoc = doc
+            adminData = data
+            break
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Erreur fallback récupération admins:', fallbackError)
+        return { 
+          success: false, 
+          error: 'Erreur de connexion au serveur. Veuillez réessayer.' 
+        }
+      }
+    }
+    
+    if (!adminDoc || !adminData) {
+      console.log('Aucun admin trouvé avec le username/email:', usernameOrEmail)
       return { success: false, error: 'Nom d\'utilisateur ou mot de passe incorrect' }
     }
     
-    const adminDoc = querySnapshot.docs[0]
-    const adminData = adminDoc.data()
+    // Vérifier si l'admin est actif
+    if (!adminData.isActive) {
+      return { 
+        success: false, 
+        error: 'Votre compte a été désactivé. Contactez un administrateur.' 
+      }
+    }
     
     // Vérifier le mot de passe (en production, utilisez un hash)
-    if (adminData.password !== password) {
+    // Comparaison avec trim pour éviter les problèmes d'espaces
+    const storedPassword = String(adminData.password || '').trim()
+    const providedPassword = String(password || '').trim()
+    
+    if (storedPassword !== providedPassword) {
+      console.log('Mot de passe incorrect - Longueur stocké:', storedPassword.length, 'Longueur fourni:', providedPassword.length)
       return { success: false, error: 'Nom d\'utilisateur ou mot de passe incorrect' }
     }
     
     // Vérifier si l'admin est autorisé
+    // Si isAuthorized est true, autoriser même si status est "pending_authorization"
     if (!adminData.isAuthorized) {
       return { 
         success: false, 
@@ -47,11 +114,18 @@ export const authenticateAdmin = async (username, password) => {
       }
     }
     
-    // Mettre à jour la dernière connexion
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminDoc.id), {
+    // Mettre à jour la dernière connexion et corriger le statut si nécessaire
+    const updateData = {
       lastLogin: serverTimestamp(),
       loginCount: (adminData.loginCount || 0) + 1
-    })
+    }
+    
+    // Si isAuthorized est true mais status n'est pas "authorized", corriger le statut
+    if (adminData.isAuthorized && adminData.status !== 'authorized') {
+      updateData.status = 'authorized'
+    }
+    
+    await updateDoc(doc(db, ADMIN_COLLECTION, adminDoc.id), updateData)
     
     // Retourner les données admin (sans le mot de passe)
     const { password: _, ...adminWithoutPassword } = adminData

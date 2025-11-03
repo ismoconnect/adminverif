@@ -24,6 +24,7 @@ import RefundDetails from './pages/RefundDetails'
 import ManageAdmins from './pages/ManageAdmins'
 import ContactMessages from './pages/ContactMessages'
 import ChangePassword from './pages/ChangePassword'
+import Notifications from './pages/Notifications'
 import Layout from './components/Layout'
 
 function App() {
@@ -32,6 +33,9 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Routes>
+            {/* Route par défaut - rediriger vers login */}
+            <Route path="/" element={<Navigate to="/admin/login" replace />} />
+            
             {/* Routes publiques */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/init" element={<InitAdmin />} />
@@ -108,15 +112,15 @@ function App() {
                 </AdminLayout>
               </ProtectedRoute>
             } />
-            
-            {/* Routes de l'ancien système (à migrer) */}
-            <Route path="/" element={
+            <Route path="/admin/notifications" element={
               <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
+                <AdminLayout>
+                  <Notifications />
+                </AdminLayout>
               </ProtectedRoute>
             } />
+            
+            {/* Routes de l'ancien système (à migrer) */}
             <Route path="/submissions" element={
               <ProtectedRoute>
                 <Layout>

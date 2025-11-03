@@ -64,10 +64,10 @@ export default function AdminLogin() {
         {/* Formulaire */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* Nom d'utilisateur */}
+            {/* Nom d'utilisateur ou Email */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Nom d'utilisateur
+                Nom d'utilisateur ou Email
               </label>
               <input
                 id="username"
@@ -77,9 +77,12 @@ export default function AdminLogin() {
                 value={formData.username}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Entrez votre nom d'utilisateur"
+                placeholder="admin ou admin@myverif.com"
                 disabled={isLoading}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Vous pouvez vous connecter avec votre nom d'utilisateur ou votre adresse email
+              </p>
             </div>
 
             {/* Mot de passe */}
