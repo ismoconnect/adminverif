@@ -11,6 +11,14 @@
   ],
   "routes": [
     {
+      "src": "/admin/notifications",
+      "dest": "https://notifications.vercel.app/"
+    },
+    {
+      "src": "/admin/notifications/(.*)",
+      "dest": "https://notifications.vercel.app/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
