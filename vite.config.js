@@ -7,5 +7,16 @@ export default defineConfig({
   server: {
     port: 3001,
     open: true
+  },
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/firestore', '@firebase/webchannel-wrapper']
+  },
+  build: {
+    rollupOptions: {
+      external: [
+        // certain versions of firebase have issues with this internal import in vite
+        // "@firebase/webchannel-wrapper/bloom-blob" 
+      ]
+    }
   }
 })
