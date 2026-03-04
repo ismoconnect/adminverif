@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FirestoreService } from '../services/firestoreService'
 
-// Icônes SVG améliorées
+// Enhanced SVG Icons
 const FileText = () => (
   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -17,12 +17,6 @@ const Clock = () => (
 const CheckCircle = () => (
   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-)
-
-const XCircle = () => (
-  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 )
 
@@ -58,7 +52,8 @@ const Calendar = () => (
 )
 
 export default function Statistics() {
-  const [stats, setStats] = useState(null)
+  const [submissionStats, setSubmissionStats] = useState(null)
+  const [refundStats, setRefundStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submissions, setSubmissions] = useState([])
 
@@ -69,17 +64,23 @@ export default function Statistics() {
   const loadStatistics = async () => {
     try {
       setLoading(true)
-      
-      // Charger les statistiques
-      const statsResult = await FirestoreService.getStatistics()
-      setStats(statsResult)
-      
-      // Charger toutes les soumissions pour les graphiques
-      const submissionsResult = await FirestoreService.getAllSubmissions(1000)
-      setSubmissions(submissionsResult || [])
-      
+
+      // 1. Charger les statistiques des soumissions
+      const subResult = await FirestoreService.getStatistics()
+      setSubmissionStats(subResult)
+
+      // 2. Charger les statistiques des remboursements
+      const refResult = await FirestoreService.getRefundStatistics()
+      if (refResult.success) {
+        setRefundStats(refResult.data)
+      }
+
+      // 3. Charger toutes les soumissions pour les graphiques (on peut limiter à 2000 pour la performance)
+      const allSubmissions = await FirestoreService.getAllSubmissions(2000)
+      setSubmissions(allSubmissions || [])
+
     } catch (error) {
-      console.error('Erreur lors du chargement:', error)
+      console.error('Erreur lors du chargement des stats:', error)
     } finally {
       setLoading(false)
     }
@@ -101,9 +102,9 @@ export default function Statistics() {
   }
 
   const dailyStats = getLast7Days()
-  submissions.forEach(submission => {
-    if (submission.createdAt) {
-      const date = new Date(submission.createdAt.seconds * 1000).toISOString().split('T')[0]
+  submissions.forEach(s => {
+    if (s.createdAt) {
+      const date = new Date(s.createdAt.seconds * 1000).toISOString().split('T')[0]
       const dayIndex = dailyStats.findIndex(day => day.date === date)
       if (dayIndex !== -1) {
         dailyStats[dayIndex].count++
@@ -111,287 +112,189 @@ export default function Statistics() {
     }
   })
 
+  // Statistiques globales combinées
+  const totalOperations = (submissionStats?.total || 0) + (refundStats?.total || 0)
+  const totalMoneyFlow = (submissionStats?.totalAmount || 0) + (refundStats?.totalAmount || 0)
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Chargement des statistiques...</p>
-        </div>
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-slate-600 font-bold tracking-tight">Analyse des données en cours...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header - Desktop seulement */}
-      <div className="hidden lg:block fixed top-0 left-64 right-0 z-30 bg-white shadow-lg border-b border-gray-200 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Statistiques</h1>
-              <p className="text-gray-600 text-sm">Analyse des performances et tendances</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">
-                {stats?.total || 0} soumissions
-              </div>
-              <button
-                onClick={loadStatistics}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
-              >
-                <Refresh />
-                Actualiser
-              </button>
-            </div>
+    <div className="min-h-screen bg-[#f8fafc] pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 py-6 mb-8 sticky top-0 z-30 shadow-sm backdrop-blur-md bg-white/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Statistiques</h1>
+            <p className="text-slate-600 text-sm">Volume Global (Soumissions + Remboursements)</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={loadStatistics} className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center gap-2">
+              <Refresh /> Actualiser
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Espace pour le header fixe sur desktop */}
-      <div className="hidden lg:block h-20"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Statistiques principales - Cards modernes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {/* Total soumissions */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <FileText className="text-white" />
-                  </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-500">Total soumissions</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
-                </div>
-              </div>
-            </div>
+        {/* TOP LEVEL OVERVIEW */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><FileText /></div>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Soumissions Total</p>
+            <h3 className="text-3xl font-black text-slate-900">{submissionStats?.total || 0}</h3>
           </div>
-
-          {/* En attente */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-                    <Clock className="text-white" />
-                  </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-500">En attente</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.pending || 0}</p>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4"><Refresh /></div>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Remboursements Total</p>
+            <h3 className="text-3xl font-black text-slate-900">{refundStats?.total || 0}</h3>
           </div>
-
-          {/* Vérifiées */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="text-white" />
-                  </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-500">Vérifiées</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.verified || 0}</p>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4"><CheckCircle /></div>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Demandes Validées</p>
+            <h3 className="text-3xl font-black text-slate-900">{(submissionStats?.verified || 0) + (refundStats?.approved || 0) + (refundStats?.completed || 0)}</h3>
           </div>
-
-          {/* Montant total */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Euro className="text-white" />
-                  </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-500">Montant total</p>
-                  <p className="text-2xl font-bold text-gray-900">{(stats?.totalAmount || 0).toFixed(2)} €</p>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4"><Euro /></div>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Volume Global</p>
+            <h3 className="text-3xl font-black text-slate-900">{totalMoneyFlow.toFixed(2)} €</h3>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Graphique par jour */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
-              <h3 className="text-white font-semibold text-lg flex items-center gap-2">
-                <Calendar />
-                Activité des 7 derniers jours
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+          {/* Charts Section */}
+          <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2.5">
+                <Calendar /> Activité récente (7j)
               </h3>
             </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {dailyStats.map((day, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-16 text-sm font-medium text-gray-600">{day.label}</div>
-                    <div className="flex-1 mx-4">
-                      <div className="bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(5, (day.count / Math.max(...dailyStats.map(d => d.count), 1)) * 100)}%` }}
+            <div className="p-8">
+              <div className="flex items-end justify-between gap-2 h-48">
+                {dailyStats.map((d, i) => {
+                  const max = Math.max(...dailyStats.map(x => x.count), 1)
+                  const height = (d.count / max) * 100
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center group">
+                      <div className="w-full bg-slate-100 rounded-xl relative overflow-hidden h-full flex flex-col justify-end">
+                        <div
+                          className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-xl transition-all duration-700"
+                          style={{ height: `${Math.max(5, height)}%` }}
                         ></div>
                       </div>
-                    </div>
-                    <div className="w-8 text-sm font-medium text-gray-900">{day.count}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Répartition par type */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-              <h3 className="text-white font-semibold text-lg flex items-center gap-2">
-                <BarChart3 />
-                Répartition par type
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {stats && stats.byType ? Object.entries(stats.byType).map(([type, count]) => {
-                  const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0
-                  return (
-                    <div key={type} className="flex items-center">
-                      <div className="w-20 text-sm font-medium text-gray-600 truncate">{type}</div>
-                      <div className="flex-1 mx-3">
-                        <div className="bg-gray-200 rounded-full h-3">
-                          <div 
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div className="w-12 text-sm font-medium text-gray-900">{count}</div>
-                      <div className="w-12 text-xs text-gray-500">{percentage.toFixed(1)}%</div>
+                      <p className="text-[10px] font-black text-slate-400 mt-3 group-hover:text-blue-600 transition-colors uppercase">{d.label}</p>
+                      <p className="text-xs font-black text-slate-900">{d.count}</p>
                     </div>
                   )
-                }) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Aucune donnée disponible
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Métriques de performance */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Taux de traitement */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
-              <h3 className="text-white font-semibold text-lg">Taux de traitement</h3>
-            </div>
-            <div className="p-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  {stats && stats.total > 0 ? ((stats.verified / stats.total) * 100).toFixed(1) : 0}%
-                </div>
-                <p className="text-sm text-gray-600">
-                  {stats?.verified || 0} sur {stats?.total || 0} soumissions
-                </p>
-                <div className="mt-4 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${stats && stats.total > 0 ? (stats.verified / stats.total) * 100 : 0}%` }}
-                  ></div>
-                </div>
+                })}
               </div>
             </div>
           </div>
 
-          {/* Taux de rejet */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-              <h3 className="text-white font-semibold text-lg">Taux de rejet</h3>
+          <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2.5">
+                <BarChart3 /> Répartition Soumissions
+              </h3>
             </div>
-            <div className="p-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-red-600 mb-2">
-                  {stats && stats.total > 0 ? ((stats.rejected / stats.total) * 100).toFixed(1) : 0}%
-                </div>
-                <p className="text-sm text-gray-600">
-                  {stats?.rejected || 0} sur {stats?.total || 0} soumissions
-                </p>
-                <div className="mt-4 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-red-500 to-red-600 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${stats && stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Montant moyen */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
-              <h3 className="text-white font-semibold text-lg">Montant moyen</h3>
-            </div>
-            <div className="p-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-purple-600 mb-2">
-                  {stats && stats.total > 0 ? (stats.totalAmount / stats.total).toFixed(2) : 0} €
-                </div>
-                <p className="text-sm text-gray-600">
-                  Par soumission
-                </p>
-                <div className="mt-4 flex items-center justify-center">
-                  <TrendingUp className="text-purple-500" />
-                  <span className="ml-2 text-sm text-gray-600">Tendance positive</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Graphique par heure (24h) */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4">
-            <h3 className="text-white font-semibold text-lg">Soumissions par heure (24h)</h3>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-12 gap-2 h-32 items-end">
-              {Array.from({ length: 24 }, (_, hour) => {
-                const hourSubmissions = submissions.filter(submission => {
-                  if (!submission.createdAt) return false
-                  const submissionHour = new Date(submission.createdAt.seconds * 1000).getHours()
-                  return submissionHour === hour
-                }).length
-                
-                const maxSubmissions = Math.max(...Array.from({ length: 24 }, (_, h) => 
-                  submissions.filter(s => {
-                    if (!s.createdAt) return false
-                    return new Date(s.createdAt.seconds * 1000).getHours() === h
-                  }).length
-                ), 1)
-                
-                const height = (hourSubmissions / maxSubmissions) * 100
-                
+            <div className="p-8 space-y-6">
+              {submissionStats && submissionStats.byType ? Object.entries(submissionStats.byType).map(([type, count]) => {
+                const pct = (count / submissionStats.total) * 100
                 return (
-                  <div key={hour} className="flex flex-col items-center">
-                    <div 
-                      className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t transition-all duration-500"
-                      style={{ height: `${Math.max(height, 5)}%` }}
-                    ></div>
-                    <div className="text-xs text-gray-500 mt-1">{hour}h</div>
+                  <div key={type} className="group">
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{type}</span>
+                      <span className="text-sm font-black text-slate-900">{count} <small className="text-slate-400 font-bold ml-1">{pct.toFixed(0)}%</small></span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                      <div className="h-full bg-blue-500 rounded-full transition-all duration-1000 shadow-[0_0_12px_rgba(59,130,246,0.3)]" style={{ width: `${pct}%` }}></div>
+                    </div>
                   </div>
                 )
-              })}
+              }) : <p className="text-center text-slate-400 italic">Aucune donnée disponible</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* DETAILED STATS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Performance Remboursements */}
+          <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm overflow-hidden relative group">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-purple-600"></div>
+            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600"><TrendingUp /></div>
+              Focus Remboursements
+            </h3>
+            <div className="space-y-6">
+              <div className="flex border-b border-slate-100 pb-4 justify-between items-center">
+                <span className="text-slate-500 font-bold text-sm">En attente</span>
+                <span className="text-amber-600 font-black text-xl">{refundStats?.pending || 0}</span>
+              </div>
+              <div className="flex border-b border-slate-100 pb-4 justify-between items-center">
+                <span className="text-slate-500 font-bold text-sm">En traitement</span>
+                <span className="text-blue-600 font-black text-xl">{refundStats?.processing || 0}</span>
+              </div>
+              <div className="flex border-b border-slate-100 pb-4 justify-between items-center">
+                <span className="text-slate-500 font-bold text-sm">Validés/Payés</span>
+                <span className="text-emerald-600 font-black text-xl">{(refundStats?.approved || 0) + (refundStats?.completed || 0)}</span>
+              </div>
+              <div className="pt-4 text-center">
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mb-1">Volume des remboursements</p>
+                <h4 className="text-3xl font-black text-slate-900">{(refundStats?.totalAmount || 0).toFixed(2)} €</h4>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Soumissions */}
+          <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-blue-600"><CheckCircle /></div>
+              Taux de Réussite
+            </h3>
+            <div className="flex flex-col items-center py-4">
+              <div className="relative w-36 h-36 flex items-center justify-center mb-6">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="72" cy="72" r="64" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-100" />
+                  <circle cx="72" cy="72" r="64" stroke="currentColor" strokeWidth="12" fill="transparent"
+                    className="text-blue-500 transition-all duration-1000"
+                    strokeDasharray={402}
+                    strokeDashoffset={402 - (402 * (submissionStats?.total > 0 ? (submissionStats.verified / submissionStats.total) : 0))}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="absolute text-3xl font-black text-slate-900">
+                  {submissionStats?.total > 0 ? ((submissionStats.verified / submissionStats.total) * 100).toFixed(0) : 0}%
+                </span>
+              </div>
+              <p className="text-center text-slate-500 font-bold text-sm leading-relaxed">
+                Des soumissions sont validées avec succès sur la plateforme.
+              </p>
+            </div>
+          </div>
+
+          {/* Average Metrics */}
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-200">
+            <h3 className="text-xl font-black mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><Euro /></div>
+              Valeur Moyenne
+            </h3>
+            <div className="space-y-10 py-6 text-center">
+              <div>
+                <h4 className="text-4xl font-black">{submissionStats?.total > 0 ? (submissionStats.totalAmount / submissionStats.total).toFixed(2) : 0} €</h4>
+                <p className="text-blue-100 font-bold text-xs uppercase mt-2 tracking-widest">Par soumission</p>
+              </div>
+              <div className="h-px bg-white/10 w-1/2 mx-auto"></div>
+              <div>
+                <h4 className="text-4xl font-black">{refundStats?.total > 0 ? (refundStats.totalAmount / refundStats.total).toFixed(2) : 0} €</h4>
+                <p className="text-blue-100 font-bold text-xs uppercase mt-2 tracking-widest">Par remboursement</p>
+              </div>
             </div>
           </div>
         </div>

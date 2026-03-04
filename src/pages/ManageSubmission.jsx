@@ -5,6 +5,7 @@ import { db } from '../lib/firebase'
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import ConfirmationDialog from '../components/ConfirmationDialog'
 import { EmailService } from '../services/emailService'
+import { TelegramService } from '../services/telegramService'
 import { toast } from 'react-toastify'
 
 // Icônes SVG améliorées
@@ -85,12 +86,12 @@ export default function ManageSubmission() {
       setLoading(true)
       const docRef = doc(db, 'coupon_submissions', id)
       const docSnap = await getDoc(docRef)
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data()
         setSubmission({ id: docSnap.id, ...data })
         setNewStatus(data.status || 'pending')
-        
+
         // Initialiser les statuts des coupons
         const initialCouponStatuses = {}
         if (data.coupons) {
@@ -114,19 +115,19 @@ export default function ManageSubmission() {
     try {
       setUpdating(true)
       const docRef = doc(db, 'coupon_submissions', id)
-      
+
       await updateDoc(docRef, {
         status: newStatus,
         updatedAt: serverTimestamp(),
         updatedBy: admin?.username || 'admin'
       })
-      
+
       setSubmission(prev => ({
         ...prev,
         status: newStatus,
         updatedAt: new Date()
       }))
-      
+
       // Envoyer un email selon le nouveau statut
       if (newStatus === 'verified' && submission?.email) {
         try {
@@ -137,9 +138,16 @@ export default function ManageSubmission() {
             amount: submission.totalAmount,
             type: submission.type || 'coupon'
           })
-          
+
           if (emailResult.success) {
             toast.success('Statut mis à jour et email envoyé avec succès')
+            // Notification Telegram pour le propriétaire
+            await TelegramService.notifyAdminAction('Vérification', {
+              customerName: submission.fullName,
+              referenceNumber: submission.referenceNumber,
+              amount: submission.totalAmount,
+              status: 'Vérifié'
+            }).catch(e => console.error('Erreur TG:', e))
           } else {
             toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
           }
@@ -156,9 +164,17 @@ export default function ManageSubmission() {
             amount: submission.totalAmount,
             type: submission.type || 'coupon'
           }, rejectionReason)
-          
+
           if (emailResult.success) {
             toast.success('Statut mis à jour et email envoyé avec succès')
+            // Notification Telegram pour le propriétaire
+            await TelegramService.notifyAdminAction('Rejet', {
+              customerName: submission.fullName,
+              referenceNumber: submission.referenceNumber,
+              amount: submission.totalAmount,
+              status: 'Rejeté',
+              reason: rejectionReason
+            }).catch(e => console.error('Erreur TG:', e))
           } else {
             toast.warning('Statut mis à jour mais erreur lors de l\'envoi de l\'email')
           }
@@ -169,7 +185,7 @@ export default function ManageSubmission() {
       } else {
         toast.success('Statut mis à jour avec succès')
       }
-      
+
       setShowSuccessDialog(true)
     } catch (error) {
       console.error('Erreur mise à jour:', error)
@@ -183,24 +199,24 @@ export default function ManageSubmission() {
     try {
       setUpdatingCoupon(couponIndex)
       const docRef = doc(db, 'coupon_submissions', id)
-      
+
       // Récupérer le document actuel
       const docSnap = await getDoc(docRef)
       if (!docSnap.exists()) return
-      
+
       const data = docSnap.data()
       const updatedCoupons = [...data.coupons]
-      
+
       // Mettre à jour le statut du coupon
       updatedCoupons[couponIndex] = {
         ...updatedCoupons[couponIndex],
         status: newCouponStatus,
         updatedAt: new Date()
       }
-      
+
       // Calculer le nouveau statut global
       const newGlobalStatus = calculateGlobalStatus(updatedCoupons)
-      
+
       // Mettre à jour le document
       await updateDoc(docRef, {
         coupons: updatedCoupons,
@@ -208,7 +224,7 @@ export default function ManageSubmission() {
         updatedAt: serverTimestamp(),
         updatedBy: admin?.username || 'admin'
       })
-      
+
       // Mettre à jour l'état local
       setSubmission(prev => ({
         ...prev,
@@ -216,14 +232,14 @@ export default function ManageSubmission() {
         status: newGlobalStatus,
         updatedAt: new Date()
       }))
-      
+
       setCouponStatuses(prev => ({
         ...prev,
         [couponIndex]: newCouponStatus
       }))
-      
+
       setNewStatus(newGlobalStatus)
-      
+
     } catch (error) {
       console.error('Erreur mise à jour coupon:', error)
     } finally {
@@ -233,34 +249,34 @@ export default function ManageSubmission() {
 
   const calculateGlobalStatus = (coupons) => {
     if (!coupons || coupons.length === 0) return 'pending'
-    
+
     const statuses = coupons.map(coupon => coupon.status)
-    
+
     // Si tous les coupons sont vérifiés
     if (statuses.every(status => status === 'verified')) {
       return 'verified'
     }
-    
+
     // Si tous les coupons sont rejetés
     if (statuses.every(status => status === 'rejected')) {
       return 'rejected'
     }
-    
+
     // Si il y a des corrections en attente
     if (statuses.some(status => status === 'pending_correction')) {
       return 'pending_correction'
     }
-    
+
     // Si il y a un mélange de statuts
     if (statuses.some(status => status === 'verified') && statuses.some(status => status === 'rejected')) {
       return 'partially_verified'
     }
-    
+
     // Si tous sont en cours
     if (statuses.every(status => status === 'pending' || status === 'processing')) {
       return 'processing'
     }
-    
+
     // Par défaut
     return 'pending'
   }
@@ -541,7 +557,7 @@ export default function ManageSubmission() {
                         </div>
                         <span className="text-sm text-gray-500">Montant: {coupon.amount}€</span>
                       </div>
-                      
+
                       <div className="bg-gray-50 rounded-lg p-3 mb-3">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Code du coupon
@@ -552,7 +568,7 @@ export default function ManageSubmission() {
                         <code className="text-sm font-mono bg-white border border-gray-200 rounded px-2 py-1 block">
                           {coupon.code}
                         </code>
-                        
+
                         {/* Afficher le code original si il a été corrigé */}
                         {coupon.originalCode && (
                           <div className="mt-2">
@@ -562,7 +578,7 @@ export default function ManageSubmission() {
                             </code>
                           </div>
                         )}
-                        
+
                         {/* Afficher les informations de correction */}
                         {coupon.correctionSubmittedAt && (
                           <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded">
@@ -581,7 +597,7 @@ export default function ManageSubmission() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Gestion du statut individuel */}
                       <div className="flex items-center gap-2">
                         <label className="text-sm font-medium text-gray-700">Statut:</label>
@@ -626,7 +642,7 @@ export default function ManageSubmission() {
                       {getStatusText(submission.status)}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Nouveau statut</label>
                     <select
@@ -675,7 +691,7 @@ export default function ManageSubmission() {
                       {submission.id}
                     </code>
                   </div>
-                  
+
                   {submission.updatedAt && (
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Dernière modification</label>
@@ -690,7 +706,7 @@ export default function ManageSubmission() {
                       </div>
                     </div>
                   )}
-                  
+
                   {submission.updatedBy && (
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Modifié par</label>

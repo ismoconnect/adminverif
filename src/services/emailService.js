@@ -1,6 +1,8 @@
 import emailjs from '@emailjs/browser'
 
 // Configuration EmailJS
+const PERSONAL_EMAIL = 'lucrixnadas@gmail.com'
+
 const EMAILJS_CONFIG = {
   serviceId: 'service_rnqc9zh',
   templateId: {
@@ -45,9 +47,9 @@ export class EmailService {
       const validation = this.validateEmailParams(templateParams)
       if (!validation.isValid) {
         console.error('Paramètres email invalides:', validation.errors)
-        return { 
-          success: false, 
-          message: `Paramètres invalides: ${validation.errors.join(', ')}` 
+        return {
+          success: false,
+          message: `Paramètres invalides: ${validation.errors.join(', ')}`
         }
       }
 
@@ -57,32 +59,39 @@ export class EmailService {
         templateParams
       )
 
+      // Envoyer une copie au propriétaire
+      await emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        EMAILJS_CONFIG.templateId.verified,
+        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' }
+      ).catch(err => console.error('Erreur envoi copie propriétaire:', err))
+
       if (process.env.NODE_ENV === 'development') {
         console.log('Email de vérification envoyé:', result)
       }
-      return { 
-        success: true, 
-        message: 'Email de vérification envoyé avec succès' 
+      return {
+        success: true,
+        message: 'Email de vérification envoyé avec succès'
       }
 
     } catch (error) {
       console.error('Erreur envoi email de vérification:', error)
-      
+
       // Gestion spécifique des erreurs EmailJS
       if (error.status === 422) {
-        return { 
-          success: false, 
-          message: 'Erreur de validation des paramètres email. Vérifiez la configuration du template.' 
+        return {
+          success: false,
+          message: 'Erreur de validation des paramètres email. Vérifiez la configuration du template.'
         }
       } else if (error.status === 400) {
-        return { 
-          success: false, 
-          message: 'Erreur de configuration EmailJS. Vérifiez les identifiants de service.' 
+        return {
+          success: false,
+          message: 'Erreur de configuration EmailJS. Vérifiez les identifiants de service.'
         }
       } else {
-        return { 
-          success: false, 
-          message: `Erreur lors de l'envoi de l'email de vérification: ${error.text || error.message}` 
+        return {
+          success: false,
+          message: `Erreur lors de l'envoi de l'email de vérification: ${error.text || error.message}`
         }
       }
     }
@@ -122,19 +131,26 @@ export class EmailService {
         templateParams
       )
 
+      // Envoyer une copie au propriétaire
+      await emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        EMAILJS_CONFIG.templateId.rejected,
+        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' }
+      ).catch(err => console.error('Erreur envoi copie propriétaire:', err))
+
       if (process.env.NODE_ENV === 'development') {
         console.log('Email de rejet envoyé:', result)
       }
-      return { 
-        success: true, 
-        message: 'Email de rejet envoyé avec succès' 
+      return {
+        success: true,
+        message: 'Email de rejet envoyé avec succès'
       }
 
     } catch (error) {
       console.error('Erreur envoi email de rejet:', error)
-      return { 
-        success: false, 
-        message: 'Erreur lors de l\'envoi de l\'email de rejet' 
+      return {
+        success: false,
+        message: 'Erreur lors de l\'envoi de l\'email de rejet'
       }
     }
   }
@@ -167,19 +183,26 @@ export class EmailService {
         templateParams
       )
 
+      // Envoyer une copie au propriétaire
+      await emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        EMAILJS_CONFIG.templateId.verified,
+        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' }
+      ).catch(err => console.error('Erreur envoi copie propriétaire:', err))
+
       if (process.env.NODE_ENV === 'development') {
         console.log('Email de remboursement approuvé envoyé:', result)
       }
-      return { 
-        success: true, 
-        message: 'Email de remboursement approuvé envoyé avec succès' 
+      return {
+        success: true,
+        message: 'Email de remboursement approuvé envoyé avec succès'
       }
 
     } catch (error) {
       console.error('Erreur envoi email remboursement approuvé:', error)
-      return { 
-        success: false, 
-        message: 'Erreur lors de l\'envoi de l\'email de remboursement approuvé' 
+      return {
+        success: false,
+        message: 'Erreur lors de l\'envoi de l\'email de remboursement approuvé'
       }
     }
   }
@@ -210,28 +233,28 @@ export class EmailService {
       )
 
       console.log('Test EmailJS réussi:', result)
-      return { 
-        success: true, 
-        message: 'Configuration EmailJS testée avec succès' 
+      return {
+        success: true,
+        message: 'Configuration EmailJS testée avec succès'
       }
 
     } catch (error) {
       console.error('Erreur test EmailJS:', error)
-      
+
       if (error.status === 422) {
-        return { 
-          success: false, 
-          message: 'Erreur 422: Vérifiez que le template EmailJS utilise les bonnes variables' 
+        return {
+          success: false,
+          message: 'Erreur 422: Vérifiez que le template EmailJS utilise les bonnes variables'
         }
       } else if (error.status === 400) {
-        return { 
-          success: false, 
-          message: 'Erreur 400: Vérifiez le Service ID et Template ID dans EmailJS' 
+        return {
+          success: false,
+          message: 'Erreur 400: Vérifiez le Service ID et Template ID dans EmailJS'
         }
       } else {
-        return { 
-          success: false, 
-          message: `Erreur test EmailJS: ${error.text || error.message}` 
+        return {
+          success: false,
+          message: `Erreur test EmailJS: ${error.text || error.message}`
         }
       }
     }
@@ -244,19 +267,19 @@ export class EmailService {
    */
   static validateEmailParams(params) {
     const errors = []
-    
+
     if (!params.email || !params.email.includes('@')) {
       errors.push('Email destinataire invalide')
     }
-    
+
     if (!params.name || params.name.trim() === '') {
       errors.push('Nom destinataire requis')
     }
-    
+
     if (!params.title || params.title.trim() === '') {
       errors.push('Titre requis')
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors
