@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { getAdminCount } from '../services/adminAuthService'
+import { useEffect } from 'react'
 
 export default function AdminLogin() {
   const [formData, setFormData] = useState({
@@ -9,9 +11,20 @@ export default function AdminLogin() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  
+  const [adminCount, setAdminCount] = useState(0)
+
   const { login } = useAdminAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchAdminCount = async () => {
+      const result = await getAdminCount()
+      if (result.success) {
+        setAdminCount(result.count)
+      }
+    }
+    fetchAdminCount()
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -30,7 +43,7 @@ export default function AdminLogin() {
 
     try {
       const result = await login(formData.username, formData.password)
-      
+
       if (result.success) {
         navigate('/admin/dashboard')
       } else {
@@ -139,19 +152,21 @@ export default function AdminLogin() {
             </button>
           </div>
 
-          {/* Bouton vers l'initialisation */}
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={() => navigate('/admin/init')}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
-            >
-              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Initialiser le système
-            </button>
-          </div>
+          {/* Bouton vers l'initialisation - Uniquement si aucun admin n'existe */}
+          {adminCount === 0 && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => navigate('/admin/init')}
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+              >
+                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Initialiser le système
+              </button>
+            </div>
+          )}
         </form>
 
         {/* Informations de sécurité */}

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createAdmin } from '../services/adminAuthService'
+import { createAdmin, getAdminCount } from '../services/adminAuthService'
+import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { useEffect } from 'react'
 
 export default function InitAdmin() {
   const [formData, setFormData] = useState({
@@ -11,7 +13,29 @@ export default function InitAdmin() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState(null)
+  const [checkingAccess, setCheckingAccess] = useState(true)
   const navigate = useNavigate()
+  const { admin } = useAdminAuth()
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const countResult = await getAdminCount()
+        if (countResult.success && countResult.count > 0) {
+          // Si des admins existent, seul un super_admin peut accéder à cette page
+          if (!admin || admin.role !== 'super_admin') {
+            navigate('/admin/login')
+            return
+          }
+        }
+      } catch (error) {
+        console.error('Erreur vérification accès init:', error)
+      } finally {
+        setCheckingAccess(false)
+      }
+    }
+    checkAccess()
+  }, [admin, navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -35,7 +59,7 @@ export default function InitAdmin() {
       }
 
       const result = await createAdmin(adminData)
-      
+
       if (result.success) {
         setResult({
           type: 'success',
@@ -58,6 +82,14 @@ export default function InitAdmin() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    )
   }
 
   return (
@@ -156,15 +188,13 @@ export default function InitAdmin() {
 
           {/* Message de résultat */}
           {result && (
-            <div className={`border rounded-md p-3 ${
-              result.type === 'success' 
-                ? 'bg-green-50 border-green-200' 
+            <div className={`border rounded-md p-3 ${result.type === 'success'
+                ? 'bg-green-50 border-green-200'
                 : 'bg-red-50 border-red-200'
-            }`}>
+              }`}>
               <div className="flex">
-                <svg className={`h-5 w-5 ${
-                  result.type === 'success' ? 'text-green-400' : 'text-red-400'
-                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`h-5 w-5 ${result.type === 'success' ? 'text-green-400' : 'text-red-400'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {result.type === 'success' ? (
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   ) : (
@@ -172,15 +202,13 @@ export default function InitAdmin() {
                   )}
                 </svg>
                 <div className="ml-3">
-                  <p className={`text-sm font-medium ${
-                    result.type === 'success' ? 'text-green-800' : 'text-red-800'
-                  }`}>
+                  <p className={`text-sm font-medium ${result.type === 'success' ? 'text-green-800' : 'text-red-800'
+                    }`}>
                     {result.message}
                   </p>
                   {result.details && (
-                    <p className={`text-sm mt-1 ${
-                      result.type === 'success' ? 'text-green-700' : 'text-red-700'
-                    }`}>
+                    <p className={`text-sm mt-1 ${result.type === 'success' ? 'text-green-700' : 'text-red-700'
+                      }`}>
                       {result.details}
                     </p>
                   )}
@@ -234,7 +262,7 @@ export default function InitAdmin() {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">Processus d'autorisation</h3>
               <p className="text-sm text-blue-700 mt-1">
-                Après la création de votre compte, un super-administrateur doit autoriser votre accès 
+                Après la création de votre compte, un super-administrateur doit autoriser votre accès
                 dans Firestore avant que vous puissiez vous connecter au système.
               </p>
             </div>

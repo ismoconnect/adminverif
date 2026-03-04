@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { 
-  getAllContactMessages, 
-  markMessageAsRead, 
-  markMessageAsUnread, 
+import { useAdminAuth } from '../contexts/AdminAuthContext'
+import {
+  getAllContactMessages,
+  markMessageAsRead,
+  markMessageAsUnread,
   deleteContactMessage,
-  getContactStats 
+  getContactStats
 } from '../services/contactService'
 
 export default function ContactMessages() {
@@ -16,6 +17,8 @@ export default function ContactMessages() {
   const [filter, setFilter] = useState('all') // 'all', 'read', 'unread'
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [messageToDelete, setMessageToDelete] = useState(null)
+  const { admin } = useAdminAuth()
+  const isSuperAdmin = admin?.role === 'super_admin'
 
   useEffect(() => {
     loadMessages()
@@ -84,8 +87,8 @@ export default function ContactMessages() {
   }
 
   const handleDeleteConfirm = async () => {
-    if (!messageToDelete) return
-    
+    if (!messageToDelete || !isSuperAdmin) return
+
     setActionLoading(messageToDelete.id)
     try {
       const result = await deleteContactMessage(messageToDelete.id)
@@ -159,7 +162,7 @@ export default function ContactMessages() {
               </div>
             </div>
           </div>
-          
+
           {/* Statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -175,7 +178,7 @@ export default function ContactMessages() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-yellow-50 p-4 rounded-lg">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -189,7 +192,7 @@ export default function ContactMessages() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -209,31 +212,28 @@ export default function ContactMessages() {
           <div className="flex space-x-2 mb-4">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                filter === 'all' 
-                  ? 'bg-orange-100 text-orange-800' 
+              className={`px-3 py-1 rounded-full text-sm font-medium ${filter === 'all'
+                  ? 'bg-orange-100 text-orange-800'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Tous ({stats.total})
             </button>
             <button
               onClick={() => setFilter('unread')}
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                filter === 'unread' 
-                  ? 'bg-orange-100 text-orange-800' 
+              className={`px-3 py-1 rounded-full text-sm font-medium ${filter === 'unread'
+                  ? 'bg-orange-100 text-orange-800'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Non lus ({stats.unread})
             </button>
             <button
               onClick={() => setFilter('read')}
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                filter === 'read' 
-                  ? 'bg-orange-100 text-orange-800' 
+              className={`px-3 py-1 rounded-full text-sm font-medium ${filter === 'read'
+                  ? 'bg-orange-100 text-orange-800'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Lus ({stats.read})
             </button>
@@ -251,23 +251,22 @@ export default function ContactMessages() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun message</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {filter === 'all' 
-                  ? 'Aucun message de contact reçu.' 
-                  : filter === 'unread' 
-                    ? 'Aucun message non lu.' 
+                {filter === 'all'
+                  ? 'Aucun message de contact reçu.'
+                  : filter === 'unread'
+                    ? 'Aucun message non lu.'
                     : 'Aucun message lu.'}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredMessages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                    message.isRead 
-                      ? 'border-gray-200 bg-gray-50' 
+                <div
+                  key={message.id}
+                  className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${message.isRead
+                      ? 'border-gray-200 bg-gray-50'
                       : 'border-orange-200 bg-orange-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
                     <div className="flex-1">
@@ -275,46 +274,45 @@ export default function ContactMessages() {
                         <h4 className="text-sm font-medium text-gray-900">
                           {message.name || 'Anonyme'}
                         </h4>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${
-                          message.isRead 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${message.isRead
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                          }`}>
                           {message.isRead ? 'Lu' : 'Non lu'}
                         </span>
                       </div>
-                      
+
                       <div className="space-y-2 text-sm text-gray-600">
                         <p>
-                          <strong>Email:</strong> 
+                          <strong>Email:</strong>
                           <span className="ml-1 break-all">{message.email}</span>
                         </p>
-                        
+
                         {message.phone && (
                           <p>
-                            <strong>Téléphone:</strong> 
+                            <strong>Téléphone:</strong>
                             <span className="ml-1">{message.phone}</span>
                           </p>
                         )}
-                        
+
                         <p>
-                          <strong>Sujet:</strong> 
+                          <strong>Sujet:</strong>
                           <span className="ml-1">{message.subject || 'Aucun sujet'}</span>
                         </p>
-                        
+
                         <div>
                           <strong>Message:</strong>
                           <p className="mt-1 text-gray-700 bg-white p-2 rounded border text-sm">
                             {message.message}
                           </p>
                         </div>
-                        
+
                         <p className="text-xs text-gray-500">
                           Reçu le: {formatDate(message.createdAt)}
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 sm:ml-4">
                       {!message.isRead ? (
                         <button
@@ -351,23 +349,25 @@ export default function ContactMessages() {
                           )}
                         </button>
                       )}
-                      
-                      <button
-                        onClick={() => handleDeleteClick(message.id)}
-                        disabled={actionLoading === message.id}
-                        className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
-                      >
-                        {actionLoading === message.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Supprimer
-                          </>
-                        )}
-                      </button>
+
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => handleDeleteClick(message.id)}
+                          disabled={actionLoading === message.id}
+                          className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                        >
+                          {actionLoading === message.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Supprimer
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

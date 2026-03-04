@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FirestoreService } from '../services/firestoreService'
+import { useAdminAuth } from '../contexts/AdminAuthContext'
 import { toast } from 'react-toastify'
 
 // Icônes SVG améliorées
@@ -53,6 +54,12 @@ const Filter = () => (
   </svg>
 )
 
+const Trash = () => (
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+)
+
 export default function Submissions() {
   const navigate = useNavigate()
   const [submissions, setSubmissions] = useState([])
@@ -61,6 +68,13 @@ export default function Submissions() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(5)
+
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [submissionToDelete, setSubmissionToDelete] = useState(null)
+
+  const { admin } = useAdminAuth()
+  const isSuperAdmin = admin?.role === 'super_admin'
 
   useEffect(() => {
     fetchSubmissions()
@@ -74,9 +88,37 @@ export default function Submissions() {
     } catch (error) {
       console.error('Erreur lors du chargement des soumissions:', error)
       toast.error('Erreur lors du chargement des soumissions')
-      setSubmissions([]) // S'assurer que submissions est toujours un tableau
+      setSubmissions([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteClick = (submission) => {
+    setSubmissionToDelete(submission)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!submissionToDelete || !isSuperAdmin) return
+
+    try {
+      setIsDeleting(true)
+      const result = await FirestoreService.deleteSubmission(submissionToDelete.id)
+
+      if (result.success) {
+        toast.success('Soumission supprimée avec succès')
+        setSubmissions(prev => prev.filter(s => s.id !== submissionToDelete.id))
+        setShowDeleteModal(false)
+        setSubmissionToDelete(null)
+      } else {
+        toast.error('Erreur lors de la suppression: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Erreur suppression:', error)
+      toast.error('Une erreur est survenue lors de la suppression')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -127,13 +169,13 @@ export default function Submissions() {
   }
 
   const filteredSubmissions = (submissions || []).filter(submission => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       getClientName(submission).toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.type?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     const matchesStatus = statusFilter === 'all' || submission.status === statusFilter
-    
+
     return matchesSearch && matchesStatus
   })
 
@@ -312,6 +354,15 @@ export default function Submissions() {
                           <Edit />
                           Gérer
                         </button>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => handleDeleteClick(submission)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md transition-colors duration-200 flex items-center gap-1 text-xs"
+                          >
+                            <Trash />
+                            Supprimer
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -325,7 +376,6 @@ export default function Submissions() {
             <div className="p-4 space-y-4">
               {currentSubmissions.map((submission) => (
                 <div key={submission.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  {/* Header de la card */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center flex-1 min-w-0">
                       <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
@@ -348,7 +398,6 @@ export default function Submissions() {
                     </div>
                   </div>
 
-                  {/* Contenu de la card */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Type</div>
@@ -364,155 +413,205 @@ export default function Submissions() {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => navigate(`/admin/submissions/${submission.id}`)}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md transition-colors duration-200 flex items-center justify-center gap-1 text-xs font-medium"
-                    >
-                      <Eye />
-                      Voir détails
-                    </button>
-                    <button
-                      onClick={() => navigate(`/admin/manage/${submission.id}`)}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-md transition-colors duration-200 flex items-center justify-center gap-1 text-xs font-medium"
-                    >
-                      <Edit />
-                      Gérer
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => navigate(`/admin/submissions/${submission.id}`)}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md transition-colors duration-200 flex items-center justify-center gap-1 text-xs font-medium"
+                      >
+                        <Eye />
+                        Voir détails
+                      </button>
+                      <button
+                        onClick={() => navigate(`/admin/manage/${submission.id}`)}
+                        className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-md transition-colors duration-200 flex items-center justify-center gap-1 text-xs font-medium"
+                      >
+                        <Edit />
+                        Gérer
+                      </button>
+                    </div>
+                    {isSuperAdmin && (
+                      <button
+                        onClick={() => handleDeleteClick(submission)}
+                        className="w-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md transition-colors duration-200 flex items-center justify-center gap-1 text-xs font-medium"
+                      >
+                        <Trash />
+                        Supprimer
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Message si aucune soumission */}
-          {filteredSubmissions.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+          <div className="bg-white px-4 py-4 border-t border-gray-200">
+            {filteredSubmissions.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune soumission trouvée</h3>
+                <p className="text-gray-500">
+                  {searchTerm || statusFilter !== 'all'
+                    ? 'Essayez de modifier vos critères de recherche.'
+                    : 'Aucune soumission n\'a encore été enregistrée.'}
+                </p>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune soumission trouvée</h3>
-              <p className="text-gray-500">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Essayez de modifier vos critères de recherche.' 
-                  : 'Aucune soumission n\'a encore été enregistrée.'}
-              </p>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {filteredSubmissions.length > itemsPerPage && (
-            <div className="bg-white px-4 py-4 border-t border-gray-200">
-              {/* Mobile Pagination */}
-              <div className="lg:hidden">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs text-gray-600">
-                    {startIndex + 1}-{Math.min(endIndex, filteredSubmissions.length)} sur {filteredSubmissions.length}
+            ) : filteredSubmissions.length > itemsPerPage && (
+              <>
+                <div className="lg:hidden">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs text-gray-600">
+                      {startIndex + 1}-{Math.min(endIndex, filteredSubmissions.length)} sur {filteredSubmissions.length}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Page {currentPage} sur {totalPages}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Page {currentPage} sur {totalPages}
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Précédent
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                        let page;
+                        if (totalPages <= 3) page = i + 1;
+                        else if (currentPage <= 2) page = i + 1;
+                        else if (currentPage >= totalPages - 1) page = totalPages - 2 + i;
+                        else page = currentPage - 1 + i;
+
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${page === currentPage ? 'bg-orange-500 text-white' : 'text-gray-700 bg-gray-100 border border-gray-300 hover:bg-gray-200'}`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-1"
+                    >
+                      Suivant
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-1"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Précédent
-                  </button>
-                  
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                      let page;
-                      if (totalPages <= 3) {
-                        page = i + 1;
-                      } else if (currentPage <= 2) {
-                        page = i + 1;
-                      } else if (currentPage >= totalPages - 1) {
-                        page = totalPages - 2 + i;
-                      } else {
-                        page = currentPage - 1 + i;
-                      }
-                      
-                      return (
+
+                <div className="hidden lg:flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Affichage de {startIndex + 1} à {Math.min(endIndex, filteredSubmissions.length)} sur {filteredSubmissions.length} soumissions
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                    >
+                      Précédent
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            page === currentPage
-                              ? 'bg-orange-500 text-white'
-                              : 'text-gray-700 bg-gray-100 border border-gray-300 hover:bg-gray-200'
-                          }`}
+                          className={`px-3 py-1 text-sm font-medium rounded-md transition-colors duration-200 ${page === currentPage ? 'bg-orange-500 text-white' : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'}`}
                         >
                           {page}
                         </button>
-                      );
-                    })}
-                  </div>
-                  
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-1"
-                  >
-                    Suivant
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+                      ))}
+                    </div>
 
-              {/* Desktop Pagination */}
-              <div className="hidden lg:flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Affichage de {startIndex + 1} à {Math.min(endIndex, filteredSubmissions.length)} sur {filteredSubmissions.length} soumissions
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                  >
-                    Précédent
-                  </button>
-                  
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors duration-200 ${
-                          page === currentPage
-                            ? 'bg-orange-500 text-white'
-                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                    >
+                      Suivant
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                  >
-                    Suivant
-                  </button>
                 </div>
-              </div>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" onClick={() => setShowDeleteModal(false)}>
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Supprimer la soumission
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Êtes-vous sûr de vouloir supprimer cette soumission ? Cette action est irréversible et toutes les données associées seront perdues.
+                      </p>
+                      {submissionToDelete && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                          <span className="font-semibold">{getClientName(submissionToDelete)}</span> ({submissionToDelete.email})
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleDeleteConfirm}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm disabled:opacity-50"
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setShowDeleteModal(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

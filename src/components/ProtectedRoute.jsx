@@ -1,8 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
 
-export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAdminAuth()
+export default function ProtectedRoute({ children, requiredRole }) {
+  const { admin, isAuthenticated, loading } = useAdminAuth()
   const location = useLocation()
 
   if (loading) {
@@ -19,6 +19,12 @@ export default function ProtectedRoute({ children }) {
   if (!isAuthenticated) {
     // Rediriger vers la page de connexion en gardant l'URL de destination
     return <Navigate to="/admin/login" state={{ from: location }} replace />
+  }
+
+  // Vérification du rôle si requis
+  if (requiredRole && admin.role !== requiredRole) {
+    // Si l'utilisateur n'a pas le rôle requis, rediriger vers le dashboard
+    return <Navigate to="/admin/dashboard" replace />
   }
 
   return children

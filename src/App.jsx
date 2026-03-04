@@ -35,11 +35,11 @@ function App() {
           <Routes>
             {/* Route par défaut - rediriger vers login */}
             <Route path="/" element={<Navigate to="/admin/login" replace />} />
-            
+
             {/* Routes publiques */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/init" element={<InitAdmin />} />
-            
+
             {/* Routes protégées */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={
@@ -92,7 +92,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/admin/manage-admins" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="super_admin">
                 <AdminLayout>
                   <ManageAdmins />
                 </AdminLayout>
@@ -119,7 +119,7 @@ function App() {
                 </AdminLayout>
               </ProtectedRoute>
             } />
-            
+
             {/* Routes de l'ancien système (à migrer) */}
             <Route path="/submissions" element={
               <ProtectedRoute>
@@ -136,7 +136,7 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
-          
+
           <ToastContainer
             position="top-right"
             autoClose={3000}

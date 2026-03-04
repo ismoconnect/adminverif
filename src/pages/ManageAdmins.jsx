@@ -1,15 +1,34 @@
 import { useState, useEffect } from 'react'
-import { getAllAdmins, getPendingAdmins, authorizeAdmin, revokeAdminAuthorization } from '../services/adminAuthService'
+import { getAllAdmins, getPendingAdmins, authorizeAdmin, revokeAdminAuthorization, createAdmin, updateAdminRole } from '../services/adminAuthService'
+import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { Link } from 'react-router-dom'
 
 export default function ManageAdmins() {
   const [pendingAdmins, setPendingAdmins] = useState([])
   const [allAdmins, setAllAdmins] = useState([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showRoleModal, setShowRoleModal] = useState(false)
+  const [editingAdmin, setEditingAdmin] = useState(null)
+  const [updateRoleLoading, setUpdateRoleLoading] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [createSuccess, setCreateSuccess] = useState('')
+  const [newAdmin, setNewAdmin] = useState({
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    role: 'admin'
+  })
+  const { admin } = useAdminAuth()
 
   useEffect(() => {
-    loadAdmins()
-  }, [])
+    if (admin?.role === 'super_admin') {
+      loadAdmins()
+    }
+  }, [admin])
 
   const loadAdmins = async () => {
     setLoading(true)
@@ -61,6 +80,79 @@ export default function ManageAdmins() {
     }
   }
 
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault()
+    setCreateLoading(true)
+    setCreateError('')
+    setCreateSuccess('')
+
+    try {
+      // Déterminer les permissions en fonction du rôle
+      const permissions = newAdmin.role === 'super_admin'
+        ? ['read', 'write', 'delete', 'manage_users']
+        : ['read', 'write']
+
+      const result = await createAdmin({
+        ...newAdmin,
+        permissions,
+        // Un super admin qui crée un compte l'autorise directement
+        isAuthorized: true,
+        status: 'authorized'
+      })
+
+      if (result.success) {
+        setCreateSuccess('Administrateur créé avec succès !')
+        setNewAdmin({
+          name: '',
+          username: '',
+          email: '',
+          password: '',
+          role: 'admin'
+        })
+        setTimeout(() => {
+          setShowCreateModal(false)
+          setCreateSuccess('')
+          loadAdmins()
+        }, 2000)
+      } else {
+        setCreateError(result.error)
+      }
+    } catch (error) {
+      setCreateError('Une erreur est survenue lors de la création')
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setNewAdmin(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleOpenRoleModal = (admin) => {
+    setEditingAdmin(admin)
+    setShowRoleModal(true)
+  }
+
+  const handleUpdateRole = async (newRole) => {
+    setUpdateRoleLoading(true)
+    try {
+      const result = await updateAdminRole(editingAdmin.id, newRole)
+      if (result.success) {
+        setShowRoleModal(false)
+        setEditingAdmin(null)
+        await loadAdmins()
+      } else {
+        alert(result.error || 'Erreur lors de la mise à jour')
+      }
+    } catch (error) {
+      console.error('Erreur update role:', error)
+      alert('Une erreur est survenue')
+    } finally {
+      setUpdateRoleLoading(false)
+    }
+  }
+
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A'
     return new Date(timestamp.seconds * 1000).toLocaleDateString('fr-FR')
@@ -70,6 +162,27 @@ export default function ManageAdmins() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    )
+  }
+
+  if (admin?.role !== 'super_admin') {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <svg className="mx-auto h-12 w-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 className="text-lg font-medium text-red-800">Accès Refusé</h3>
+          <p className="mt-2 text-sm text-red-700">
+            Désolé, seuls les super-administrateurs peuvent accéder à cette page.
+          </p>
+          <div className="mt-6">
+            <Link to="/admin/dashboard" className="text-sm font-medium text-red-600 hover:text-red-500">
+              Retour au tableau de bord &rarr;
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }
@@ -88,7 +201,16 @@ export default function ManageAdmins() {
                 Gérez les autorisations et les comptes administrateurs
               </p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Créer un Admin
+              </button>
               <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -112,7 +234,7 @@ export default function ManageAdmins() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -126,7 +248,7 @@ export default function ManageAdmins() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -152,7 +274,7 @@ export default function ManageAdmins() {
                 {pendingAdmins.length} en attente
               </span>
             </div>
-            
+
             {pendingAdmins.length === 0 ? (
               <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,7 +345,7 @@ export default function ManageAdmins() {
               {allAdmins.length} total
             </span>
           </div>
-          
+
           {allAdmins.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,12 +362,10 @@ export default function ManageAdmins() {
                   <div key={admin.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          admin.isAuthorized ? 'bg-green-200' : 'bg-yellow-200'
-                        }`}>
-                          <svg className={`w-6 h-6 ${
-                            admin.isAuthorized ? 'text-green-700' : 'text-yellow-700'
-                          }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${admin.isAuthorized ? 'bg-green-200' : 'bg-yellow-200'
+                          }`}>
+                          <svg className={`w-6 h-6 ${admin.isAuthorized ? 'text-green-700' : 'text-yellow-700'
+                            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
@@ -255,11 +375,10 @@ export default function ManageAdmins() {
                         <p className="text-sm text-gray-500 truncate">@{admin.username}</p>
                         <p className="text-sm text-gray-500 truncate">{admin.email}</p>
                         <div className="mt-2 flex items-center space-x-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            admin.isAuthorized 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${admin.isAuthorized
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                            }`}>
                             {admin.isAuthorized ? 'Autorisé' : 'En attente'}
                           </span>
                           <span className="text-xs text-gray-500">
@@ -300,6 +419,9 @@ export default function ManageAdmins() {
                         Administrateur
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rôle
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Statut
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -315,12 +437,10 @@ export default function ManageAdmins() {
                       <tr key={admin.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
-                              admin.isAuthorized ? 'bg-green-200' : 'bg-yellow-200'
-                            }`}>
-                              <svg className={`h-6 w-6 ${
-                                admin.isAuthorized ? 'text-green-700' : 'text-yellow-700'
-                              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${admin.isAuthorized ? 'bg-green-200' : 'bg-yellow-200'
+                              }`}>
+                              <svg className={`h-6 w-6 ${admin.isAuthorized ? 'text-green-700' : 'text-yellow-700'
+                                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
                             </div>
@@ -331,12 +451,17 @@ export default function ManageAdmins() {
                             </div>
                           </div>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${admin.role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                            {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            admin.isAuthorized 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${admin.isAuthorized
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                            }`}>
                             {admin.isAuthorized ? 'Autorisé' : 'En attente'}
                           </span>
                         </td>
@@ -344,23 +469,31 @@ export default function ManageAdmins() {
                           {formatDate(admin.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {admin.isAuthorized ? (
+                          <div className="flex space-x-3">
+                            {admin.isAuthorized ? (
+                              <button
+                                onClick={() => handleRevoke(admin.id)}
+                                disabled={actionLoading === admin.id}
+                                className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                              >
+                                {actionLoading === admin.id ? '...' : 'Révoquer'}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleAuthorize(admin.id)}
+                                disabled={actionLoading === admin.id}
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                              >
+                                {actionLoading === admin.id ? '...' : 'Autoriser'}
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleRevoke(admin.id)}
-                              disabled={actionLoading === admin.id}
-                              className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                              onClick={() => handleOpenRoleModal(admin)}
+                              className="text-orange-600 hover:orange-red-900"
                             >
-                              {actionLoading === admin.id ? '...' : 'Révoquer'}
+                              Modifier Rôle
                             </button>
-                          ) : (
-                            <button
-                              onClick={() => handleAuthorize(admin.id)}
-                              disabled={actionLoading === admin.id}
-                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                            >
-                              {actionLoading === admin.id ? '...' : 'Autoriser'}
-                            </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -371,6 +504,198 @@ export default function ManageAdmins() {
           )}
         </div>
       </div>
+
+      {/* Modal de création d'admin */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <form onSubmit={handleCreateAdmin}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Nouveau compte administrateur
+                      </h3>
+
+                      <div className="mt-4 space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Nom complet</label>
+                          <input
+                            type="text"
+                            name="name"
+                            required
+                            value={newAdmin.name}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Nom d'utilisateur</label>
+                          <input
+                            type="text"
+                            name="username"
+                            required
+                            value={newAdmin.username}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Email</label>
+                          <input
+                            type="email"
+                            name="email"
+                            required
+                            value={newAdmin.email}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+                          <input
+                            type="password"
+                            name="password"
+                            required
+                            value={newAdmin.password}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Rôle</label>
+                          <select
+                            name="role"
+                            value={newAdmin.role}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                          >
+                            <option value="admin">Administrateur Standard</option>
+                            <option value="super_admin">Super Administrateur</option>
+                          </select>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {newAdmin.role === 'super_admin'
+                              ? 'Accès complet incluant la gestion des admins.'
+                              : 'Accès limité au traitement des demandes.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {createError && (
+                        <div className="mt-4 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600">
+                          {createError}
+                        </div>
+                      )}
+
+                      {createSuccess && (
+                        <div className="mt-4 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-600">
+                          {createSuccess}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    disabled={createLoading}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                  >
+                    {createLoading ? 'Création...' : 'Créer l\'administrateur'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification de rôle */}
+      {showRoleModal && editingAdmin && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Modifier le rôle
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Modification du rôle pour <strong>{editingAdmin.name}</strong>
+                    </p>
+
+                    <div className="mt-4 space-y-2">
+                      <button
+                        onClick={() => handleUpdateRole('admin')}
+                        disabled={updateRoleLoading}
+                        className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${editingAdmin.role === 'admin' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 hover:border-orange-200'
+                          }`}
+                      >
+                        <div className="font-medium text-gray-900">Administrateur Standard</div>
+                        <div className="text-xs text-gray-500">Accès limité au traitement des demandes.</div>
+                      </button>
+
+                      <button
+                        onClick={() => handleUpdateRole('super_admin')}
+                        disabled={updateRoleLoading}
+                        className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${editingAdmin.role === 'super_admin' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 hover:border-orange-200'
+                          }`}
+                      >
+                        <div className="font-medium text-gray-900">Super Administrateur</div>
+                        <div className="text-xs text-gray-500">Accès complet incluant la gestion des admins.</div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={() => setShowRoleModal(false)}
+                  className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:w-auto sm:text-sm"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
