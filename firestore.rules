@@ -35,6 +35,18 @@ service cloud.firestore {
       allow read, write: if true;  // Accès complet pour l'admin
     }
     
+    // NOUVELLES RÈGLES POUR LA SUSPENSION
+    match /app_settings/{document} {
+      allow read: if true;        // Tout le monde peut voir si le site est suspendu
+      allow write: if true;       // Idem que pour settings, modifiable par l'admin v3
+    }
+    
+    // NOUVELLES RÈGLES POUR LES PARAMÈTRES (API, etc)
+    match /settings/{document} {
+      allow read: if true;        // Permettre la lecture pour tout le monde (Client & Admin)
+      allow write: if true;       // En production, devrait être limité aux super_admin avec auth.uid
+    }
+    
     // Règles par défaut
     match /{document=**} {
       allow read, write: if false;

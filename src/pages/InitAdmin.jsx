@@ -1,48 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createAdmin, getAdminCount } from '../services/adminAuthService'
-import { useAdminAuth } from '../contexts/AdminAuthContext'
-import { useEffect } from 'react'
+import { createAdmin } from '../services/adminAuthService'
 
 export default function InitAdmin() {
   const [formData, setFormData] = useState({
-    username: 'admin',
-    password: 'admin123',
-    name: 'Administrateur Principal',
-    email: 'admin@myverif.com'
+    username: '',
+    password: '',
+    name: '',
+    email: ''
   })
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState(null)
-  const [checkingAccess, setCheckingAccess] = useState(true)
   const navigate = useNavigate()
-  const { admin } = useAdminAuth()
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        const countResult = await getAdminCount()
-        if (countResult.success && countResult.count > 0) {
-          // Si des admins existent, seul un super_admin peut accéder à cette page
-          if (!admin || admin.role !== 'super_admin') {
-            navigate('/admin/login')
-            return
-          }
-        }
-      } catch (error) {
-        console.error('Erreur vérification accès init:', error)
-      } finally {
-        setCheckingAccess(false)
-      }
-    }
-    checkAccess()
-  }, [admin, navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e) => {
@@ -55,22 +28,25 @@ export default function InitAdmin() {
         ...formData,
         role: 'super_admin',
         permissions: ['read', 'write', 'delete', 'manage_users'],
-        isActive: true
+        isActive: true,
+        isAuthorized: true,
+        status: 'authorized'
       }
 
-      const result = await createAdmin(adminData)
+      const res = await createAdmin(adminData)
 
-      if (result.success) {
+      if (res.success) {
         setResult({
           type: 'success',
-          message: 'Administrateur créé avec succès !',
-          details: 'Votre compte est en attente d\'autorisation. Un super-administrateur doit approuver votre accès avant que vous puissiez vous connecter.'
+          message: 'Super Administrateur créé avec succès !',
+          details: 'Vous pouvez maintenant vous connecter avec vos nouveaux identifiants.'
         })
+        setTimeout(() => navigate('/admin/login'), 3000)
       } else {
         setResult({
           type: 'error',
           message: 'Erreur lors de la création',
-          details: result.error
+          details: res.error
         })
       }
     } catch (error) {
@@ -84,74 +60,41 @@ export default function InitAdmin() {
     }
   }
 
-  if (checkingAccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-orange-500 rounded-full flex items-center justify-center mb-4">
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-950 to-slate-900 flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full">
+
+        {/* Bannière d'urgence */}
+        <div className="mb-6 p-4 bg-amber-500/20 border border-amber-500/50 rounded-xl backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <svg className="h-6 w-6 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
+            <div>
+              <p className="text-amber-300 font-semibold text-sm">Mode Récupération d'Urgence</p>
+              <p className="text-amber-200/70 text-xs mt-0.5">Ce compte sera immédiatement actif et autorisé.</p>
+            </div>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            Initialisation Admin
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Créer le premier administrateur du système
-          </p>
         </div>
 
-        {/* Formulaire */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            {/* Nom d'utilisateur */}
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Nom d'utilisateur
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                placeholder="admin"
-                disabled={isLoading}
-              />
+        {/* Card principale */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-8 text-center">
+            <div className="mx-auto h-16 w-16 bg-white/20 rounded-full flex items-center justify-center mb-4 ring-4 ring-white/30">
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
             </div>
+            <h1 className="text-2xl font-bold text-white">Créer un Super Admin</h1>
+            <p className="text-orange-100 text-sm mt-1">Récupération d'accès administrateur</p>
+          </div>
 
-            {/* Mot de passe */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Mot de passe
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                placeholder="admin123"
-                disabled={isLoading}
-              />
-            </div>
-
+          {/* Formulaire */}
+          <form onSubmit={handleSubmit} className="px-8 py-8 space-y-5">
             {/* Nom complet */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-white/80 mb-1.5">
                 Nom complet
               </label>
               <input
@@ -161,15 +104,33 @@ export default function InitAdmin() {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Administrateur Principal"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                placeholder="Votre nom complet"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Nom d'utilisateur */}
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-white/80 mb-1.5">
+                Nom d'utilisateur
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                placeholder="nom_utilisateur"
                 disabled={isLoading}
               />
             </div>
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1.5">
                 Email
               </label>
               <input
@@ -179,94 +140,103 @@ export default function InitAdmin() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                placeholder="admin@myverif.com"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                placeholder="admin@exemple.com"
                 disabled={isLoading}
               />
             </div>
-          </div>
 
-          {/* Message de résultat */}
-          {result && (
-            <div className={`border rounded-md p-3 ${result.type === 'success'
-                ? 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
+            {/* Mot de passe */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-1.5">
+                Mot de passe
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minLength={6}
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                placeholder="Minimum 6 caractères"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Message de résultat */}
+            {result && (
+              <div className={`rounded-xl p-4 border ${
+                result.type === 'success'
+                  ? 'bg-green-500/20 border-green-500/40'
+                  : 'bg-red-500/20 border-red-500/40'
               }`}>
-              <div className="flex">
-                <svg className={`h-5 w-5 ${result.type === 'success' ? 'text-green-400' : 'text-red-400'
-                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {result.type === 'success' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  )}
-                </svg>
-                <div className="ml-3">
-                  <p className={`text-sm font-medium ${result.type === 'success' ? 'text-green-800' : 'text-red-800'
-                    }`}>
-                    {result.message}
-                  </p>
-                  {result.details && (
-                    <p className={`text-sm mt-1 ${result.type === 'success' ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                      {result.details}
+                <div className="flex items-start gap-3">
+                  <svg className={`h-5 w-5 flex-shrink-0 mt-0.5 ${result.type === 'success' ? 'text-green-400' : 'text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {result.type === 'success' ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                  <div>
+                    <p className={`text-sm font-semibold ${result.type === 'success' ? 'text-green-300' : 'text-red-300'}`}>
+                      {result.message}
                     </p>
-                  )}
+                    {result.details && (
+                      <p className={`text-xs mt-1 ${result.type === 'success' ? 'text-green-200/70' : 'text-red-200/70'}`}>
+                        {result.details}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Bouton de création */}
-          <div>
+            {/* Bouton de création */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              disabled={isLoading || result?.type === 'success'}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
             >
               {isLoading ? (
-                <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   Création en cours...
-                </div>
+                </>
+              ) : result?.type === 'success' ? (
+                <>
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Redirection vers la connexion...
+                </>
               ) : (
-                'Créer l\'administrateur'
+                <>
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Créer le Super Admin
+                </>
               )}
             </button>
-          </div>
 
-          {/* Bouton retour à la connexion */}
-          <div className="mt-4">
+            {/* Retour login */}
             <button
               type="button"
               onClick={() => navigate('/admin/login')}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+              className="w-full py-3 px-4 border border-white/20 text-white/70 hover:text-white hover:border-white/40 font-medium rounded-xl focus:outline-none transition-all duration-200 flex items-center justify-center gap-2 text-sm"
             >
-              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               Retour à la connexion
             </button>
-          </div>
-        </form>
-
-        {/* Informations */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex">
-            <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">Processus d'autorisation</h3>
-              <p className="text-sm text-blue-700 mt-1">
-                Après la création de votre compte, un super-administrateur doit autoriser votre accès
-                dans Firestore avant que vous puissiez vous connecter au système.
-              </p>
-            </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

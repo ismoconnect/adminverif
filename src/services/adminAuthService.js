@@ -11,6 +11,7 @@ import {
   deleteDoc,
   serverTimestamp
 } from 'firebase/firestore'
+import { dualAddDoc, dualUpdateDoc, dualDeleteDoc } from '../utils/multiDbWriter'
 
 // Collection pour les administrateurs
 const ADMIN_COLLECTION = 'admins'
@@ -125,7 +126,7 @@ export const authenticateAdmin = async (usernameOrEmail, password) => {
       updateData.status = 'authorized'
     }
 
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminDoc.id), updateData)
+    await dualUpdateDoc(ADMIN_COLLECTION, adminDoc.id, updateData)
 
     // Retourner les données admin (sans le mot de passe)
     const { password: _, ...adminWithoutPassword } = adminData
@@ -146,7 +147,7 @@ export const authenticateAdmin = async (usernameOrEmail, password) => {
 // Fonction pour créer un nouvel admin
 export const createAdmin = async (adminData) => {
   try {
-    const docRef = await addDoc(collection(db, ADMIN_COLLECTION), {
+    const res = await dualAddDoc(ADMIN_COLLECTION, {
       isActive: true,
       isAuthorized: false, // Valeur par défaut
       loginCount: 0,
@@ -155,7 +156,7 @@ export const createAdmin = async (adminData) => {
       createdAt: serverTimestamp()
     })
 
-    return { success: true, adminId: docRef.id }
+    return { success: true, adminId: res.id }
   } catch (error) {
     console.error('Erreur création admin:', error)
     return { success: false, error: 'Erreur lors de la création de l\'admin' }
@@ -181,7 +182,7 @@ export const getAllAdmins = async () => {
 // Fonction pour désactiver un admin
 export const deactivateAdmin = async (adminId) => {
   try {
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminId), {
+    await dualUpdateDoc(ADMIN_COLLECTION, adminId, {
       isActive: false,
       deactivatedAt: serverTimestamp()
     })
@@ -196,7 +197,7 @@ export const deactivateAdmin = async (adminId) => {
 // Fonction pour changer le mot de passe d'un admin
 export const changeAdminPassword = async (adminId, newPassword) => {
   try {
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminId), {
+    await dualUpdateDoc(ADMIN_COLLECTION, adminId, {
       password: newPassword,
       passwordChangedAt: serverTimestamp()
     })
@@ -237,7 +238,7 @@ export const validateAdminSession = async (adminId) => {
 // Fonction pour autoriser un admin
 export const authorizeAdmin = async (adminId) => {
   try {
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminId), {
+    await dualUpdateDoc(ADMIN_COLLECTION, adminId, {
       isAuthorized: true,
       status: 'authorized',
       authorizedAt: serverTimestamp()
@@ -253,7 +254,7 @@ export const authorizeAdmin = async (adminId) => {
 // Fonction pour révoquer l'autorisation d'un admin
 export const revokeAdminAuthorization = async (adminId) => {
   try {
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminId), {
+    await dualUpdateDoc(ADMIN_COLLECTION, adminId, {
       isAuthorized: false,
       status: 'revoked',
       revokedAt: serverTimestamp()
@@ -295,7 +296,7 @@ export const updateAdminRole = async (adminId, newRole) => {
       ? ['read', 'write', 'delete', 'manage_users']
       : ['read', 'write']
 
-    await updateDoc(doc(db, ADMIN_COLLECTION, adminId), {
+    await dualUpdateDoc(ADMIN_COLLECTION, adminId, {
       role: newRole,
       permissions: permissions,
       roleUpdatedAt: serverTimestamp()

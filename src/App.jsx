@@ -25,6 +25,8 @@ import ManageAdmins from './pages/ManageAdmins'
 import ContactMessages from './pages/ContactMessages'
 import ChangePassword from './pages/ChangePassword'
 import Notifications from './pages/Notifications'
+import BackendSettings from './pages/BackendSettings'
+import ApiSettings from './pages/ApiSettings'
 import Layout from './components/Layout'
 
 function App() {
@@ -116,6 +118,20 @@ function App() {
               <ProtectedRoute>
                 <AdminLayout>
                   <Notifications />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/backend-settings" element={
+              <ProtectedRoute requiredRole="super_admin">
+                <AdminLayout>
+                  <BackendSettings />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/api-settings" element={
+              <ProtectedRoute requiredRole="super_admin">
+                <AdminLayout>
+                  <ApiSettings />
                 </AdminLayout>
               </ProtectedRoute>
             } />

@@ -1,32 +1,49 @@
 import emailjs from '@emailjs/browser'
+import { SettingsService } from './settingsService'
 
-// Configuration EmailJS
+// Configuration EmailJS - Par défaut on envoie une copie à
 const PERSONAL_EMAIL = 'lucrixnadas@gmail.com'
-
-const EMAILJS_CONFIG = {
-  serviceId: 'service_rnqc9zh',
-  templateId: {
-    verified: 'template_asgn9e8', // Template pour statut vérifié
-    rejected: 'template_7nr83rf'  // Template pour statut rejeté
-  },
-  publicKey: '6RR8pBaWS0fFEa_tG'
-}
-
-// Initialiser EmailJS
-emailjs.init(EMAILJS_CONFIG.publicKey)
 
 export class EmailService {
   /**
+   * Récupère la configuration EmailJS depuis Firestore
+   */
+  static async getConfig() {
+    const result = await SettingsService.getApiSettings()
+    if (result.success && result.data) {
+      const d = result.data;
+      
+      // Vérifier si le service est activé
+      if (d.emailjs_c1_enabled === false) {
+        console.warn('⚠️ Service EmailJS (Admin/Coupons) désactivé via les paramètres.');
+        return null;
+      }
+
+      return {
+        // Utilise les nouvelles clés C1 (Coupons) ou les anciennes si existantes
+        serviceId: d.emailjs_c1_service_id || d.emailjs_service_id,
+        publicKey: d.emailjs_c1_public_key || d.emailjs_public_key,
+        templateId: {
+          verified: d.emailjs_c1_template_coupon || d.emailjs_template_verified,
+          rejected: d.emailjs_c1_template_contact || d.emailjs_template_rejected
+        }
+      }
+    }
+    return null
+  }
+
+  /**
    * Envoie un email de vérification quand une soumission est approuvée
    * @param {Object} submissionData - Données de la soumission
-   * @param {string} submissionData.customerEmail - Email du client
-   * @param {string} submissionData.customerName - Nom du client
-   * @param {string} submissionData.referenceNumber - Numéro de référence
-   * @param {string} submissionData.amount - Montant
-   * @param {string} submissionData.type - Type (coupon/carte cadeau)
    * @returns {Promise<{success: boolean, message: string}>}
    */
   static async sendVerificationEmail(submissionData) {
+    const config = await this.getConfig();
+    if (!config || !config.serviceId || !config.templateId.verified || !config.publicKey) {
+      console.warn("EmailJS non configuré.");
+      return { success: false, message: "EmailJS non configuré." };
+    }
+
     try {
       const templateParams = {
         email: submissionData.customerEmail,
@@ -43,72 +60,45 @@ export class EmailService {
         console.log('Paramètres email:', templateParams)
       }
 
-      // Valider les paramètres
       const validation = this.validateEmailParams(templateParams)
       if (!validation.isValid) {
-        console.error('Paramètres email invalides:', validation.errors)
-        return {
-          success: false,
-          message: `Paramètres invalides: ${validation.errors.join(', ')}`
-        }
+        return { success: false, message: `Paramètres invalides: ${validation.errors.join(', ')}` }
       }
 
       const result = await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.verified,
-        templateParams
+        config.serviceId,
+        config.templateId.verified,
+        templateParams,
+        config.publicKey
       )
 
-      // Envoyer une copie au propriétaire
       await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.verified,
-        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' }
+        config.serviceId,
+        config.templateId.verified,
+        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' },
+        config.publicKey
       ).catch(err => console.error('Erreur envoi copie propriétaire:', err))
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Email de vérification envoyé:', result)
-      }
-      return {
-        success: true,
-        message: 'Email de vérification envoyé avec succès'
-      }
+      return { success: true, message: 'Email de vérification envoyé avec succès' }
 
     } catch (error) {
       console.error('Erreur envoi email de vérification:', error)
-
-      // Gestion spécifique des erreurs EmailJS
-      if (error.status === 422) {
-        return {
-          success: false,
-          message: 'Erreur de validation des paramètres email. Vérifiez la configuration du template.'
-        }
-      } else if (error.status === 400) {
-        return {
-          success: false,
-          message: 'Erreur de configuration EmailJS. Vérifiez les identifiants de service.'
-        }
-      } else {
-        return {
-          success: false,
-          message: `Erreur lors de l'envoi de l'email de vérification: ${error.text || error.message}`
-        }
-      }
+      return { success: false, message: `Erreur lors de l'envoi: ${error.text || error.message}` }
     }
   }
 
   /**
    * Envoie un email de rejet quand une soumission est rejetée
    * @param {Object} submissionData - Données de la soumission
-   * @param {string} submissionData.customerEmail - Email du client
-   * @param {string} submissionData.customerName - Nom du client
-   * @param {string} submissionData.referenceNumber - Numéro de référence
-   * @param {string} submissionData.amount - Montant
-   * @param {string} submissionData.type - Type (coupon/carte cadeau)
    * @param {string} reason - Raison du rejet (optionnel)
    * @returns {Promise<{success: boolean, message: string}>}
    */
   static async sendRejectionEmail(submissionData, reason = '') {
+    const config = await this.getConfig();
+    if (!config || !config.serviceId || !config.templateId.rejected || !config.publicKey) {
+      return { success: false, message: "EmailJS non configuré." };
+    }
+
     try {
       const templateParams = {
         email: submissionData.customerEmail,
@@ -121,37 +111,25 @@ export class EmailService {
         status: 'Rejeté'
       }
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Paramètres email rejet:', templateParams)
-      }
-
       const result = await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.rejected,
-        templateParams
+        config.serviceId,
+        config.templateId.rejected,
+        templateParams,
+        config.publicKey
       )
 
-      // Envoyer une copie au propriétaire
       await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.rejected,
-        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' }
+        config.serviceId,
+        config.templateId.rejected,
+        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' },
+        config.publicKey
       ).catch(err => console.error('Erreur envoi copie propriétaire:', err))
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Email de rejet envoyé:', result)
-      }
-      return {
-        success: true,
-        message: 'Email de rejet envoyé avec succès'
-      }
+      return { success: true, message: 'Email de rejet envoyé avec succès' }
 
     } catch (error) {
       console.error('Erreur envoi email de rejet:', error)
-      return {
-        success: false,
-        message: 'Erreur lors de l\'envoi de l\'email de rejet'
-      }
+      return { success: false, message: 'Erreur lors de l\'envoi de l\'email de rejet' }
     }
   }
 
@@ -161,6 +139,11 @@ export class EmailService {
    * @returns {Promise<{success: boolean, message: string}>}
    */
   static async sendRefundApprovalEmail(refundData) {
+    const config = await this.getConfig();
+    if (!config || !config.serviceId || !config.templateId.verified || !config.publicKey) {
+      return { success: false, message: "EmailJS non configuré." };
+    }
+
     try {
       const templateParams = {
         email: refundData.customerEmail,
@@ -173,37 +156,25 @@ export class EmailService {
         status: 'Approuvé'
       }
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Paramètres email remboursement:', templateParams)
-      }
-
       const result = await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.verified, // Utiliser le même template
-        templateParams
+        config.serviceId,
+        config.templateId.verified,
+        templateParams,
+        config.publicKey
       )
 
-      // Envoyer une copie au propriétaire
       await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.verified,
-        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' }
+        config.serviceId,
+        config.templateId.verified,
+        { ...templateParams, email: PERSONAL_EMAIL, name: 'Propriétaire (Copie)' },
+        config.publicKey
       ).catch(err => console.error('Erreur envoi copie propriétaire:', err))
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Email de remboursement approuvé envoyé:', result)
-      }
-      return {
-        success: true,
-        message: 'Email de remboursement approuvé envoyé avec succès'
-      }
+      return { success: true, message: 'Email de remboursement approuvé envoyé avec succès' }
 
     } catch (error) {
       console.error('Erreur envoi email remboursement approuvé:', error)
-      return {
-        success: false,
-        message: 'Erreur lors de l\'envoi de l\'email de remboursement approuvé'
-      }
+      return { success: false, message: 'Erreur lors de l\'envoi de l\'email de remboursement approuvé' }
     }
   }
 
@@ -212,6 +183,11 @@ export class EmailService {
    * @returns {Promise<{success: boolean, message: string}>}
    */
   static async testEmailConfiguration() {
+    const config = await this.getConfig();
+    if (!config || !config.serviceId || !config.templateId.verified || !config.publicKey) {
+      return { success: false, message: "EmailJS non configuré correctement." };
+    }
+
     try {
       const testParams = {
         email: 'test@example.com',
@@ -224,65 +200,28 @@ export class EmailService {
         status: 'Test'
       }
 
-      console.log('Test EmailJS avec paramètres:', testParams)
-
       const result = await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId.verified,
-        testParams
+        config.serviceId,
+        config.templateId.verified,
+        testParams,
+        config.publicKey
       )
 
-      console.log('Test EmailJS réussi:', result)
-      return {
-        success: true,
-        message: 'Configuration EmailJS testée avec succès'
-      }
-
+      return { success: true, message: 'Configuration EmailJS testée avec succès' }
     } catch (error) {
       console.error('Erreur test EmailJS:', error)
-
-      if (error.status === 422) {
-        return {
-          success: false,
-          message: 'Erreur 422: Vérifiez que le template EmailJS utilise les bonnes variables'
-        }
-      } else if (error.status === 400) {
-        return {
-          success: false,
-          message: 'Erreur 400: Vérifiez le Service ID et Template ID dans EmailJS'
-        }
-      } else {
-        return {
-          success: false,
-          message: `Erreur test EmailJS: ${error.text || error.message}`
-        }
-      }
+      return { success: false, message: `Erreur test EmailJS: ${error.text || error.message}` }
     }
   }
 
   /**
    * Valide les paramètres avant envoi
-   * @param {Object} params - Paramètres à valider
-   * @returns {Object} - {isValid: boolean, errors: string[]}
    */
   static validateEmailParams(params) {
     const errors = []
-
-    if (!params.email || !params.email.includes('@')) {
-      errors.push('Email destinataire invalide')
-    }
-
-    if (!params.name || params.name.trim() === '') {
-      errors.push('Nom destinataire requis')
-    }
-
-    if (!params.title || params.title.trim() === '') {
-      errors.push('Titre requis')
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    }
+    if (!params.email || !params.email.includes('@')) errors.push('Email destinataire invalide')
+    if (!params.name || params.name.trim() === '') errors.push('Nom destinataire requis')
+    if (!params.title || params.title.trim() === '') errors.push('Titre requis')
+    return { isValid: errors.length === 0, errors }
   }
 }

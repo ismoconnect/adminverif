@@ -1,5 +1,6 @@
 import { db } from '../lib/firebase'
-import { doc, updateDoc, getDoc } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
+import { dualUpdateDoc } from '../utils/multiDbWriter'
 
 export class AdminPasswordService {
   /**
@@ -33,8 +34,8 @@ export class AdminPasswordService {
         return { success: false, message: 'Mot de passe actuel incorrect' }
       }
 
-      // Mettre à jour le mot de passe et la date de dernière modification
-      await updateDoc(adminRef, {
+      // Mettre à jour le mot de passe et la date de dernière modification sur les deux backends
+      await dualUpdateDoc('admins', adminId, {
         password: newPassword,
         passwordLastChanged: new Date(),
         lastModified: new Date()

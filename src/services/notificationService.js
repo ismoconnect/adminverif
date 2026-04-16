@@ -1,4 +1,5 @@
 import { db } from '../lib/firebase'
+import { dualAddDoc, dualUpdateDoc } from '../utils/multiDbWriter'
 import { 
   collection, 
   doc,
@@ -6,8 +7,6 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  addDoc,
-  updateDoc,
   getDocs,
   serverTimestamp,
   where,
@@ -38,7 +37,7 @@ export const createNotification = async (type, title, message, data = {}) => {
       createdAt: serverTimestamp()
     }
     
-    await addDoc(collection(db, NOTIFICATIONS_COLLECTION), notification)
+    await dualAddDoc(NOTIFICATIONS_COLLECTION, notification)
     return { success: true }
   } catch (error) {
     console.error('Erreur création notification:', error)
@@ -100,7 +99,7 @@ export const getUnreadNotifications = async () => {
 export const markNotificationAsRead = async (notificationId) => {
   try {
     const notificationRef = doc(db, NOTIFICATIONS_COLLECTION, notificationId)
-    await updateDoc(notificationRef, {
+    await dualUpdateDoc(NOTIFICATIONS_COLLECTION, notificationId, {
       read: true,
       readAt: serverTimestamp()
     })

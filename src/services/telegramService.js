@@ -1,27 +1,44 @@
+import { SettingsService } from './settingsService'
+
 /**
  * Service pour l'envoi de notifications via Telegram
  * Utilisé pour les copies personnelles du propriétaire dans l'Admin
  */
 export class TelegramService {
-    // Utiliser des constantes ou process.env si disponible
-    static BOT_TOKEN = '8585200194:AAH1_4YuuuESNcwUrHF6jwlJ4vFCGiKm2BI';
-    static CHAT_ID = '7783827859';
+    /**
+     * Récupère la configuration Telegram depuis Firestore
+     */
+    static async getConfig() {
+        const result = await SettingsService.getApiSettings();
+        if (result.success && result.data) {
+            if (result.data.telegram_enabled === false) {
+                console.warn('⚠️ Service Telegram (Admin) désactivé via les paramètres.');
+                return { botToken: null, chatId: null };
+            }
+            return {
+                botToken: result.data.telegram_bot_token,
+                chatId: result.data.telegram_chat_id
+            };
+        }
+        return { botToken: null, chatId: null };
+    }
 
     /**
      * Envoie un message formaté via Telegram
      */
     static async sendMessage(message) {
-        if (!this.BOT_TOKEN || this.BOT_TOKEN === 'VOTRE_BOT_TOKEN_ICI') {
-            console.warn('Telegram non configuré dans l\'Admin.');
+        const config = await this.getConfig();
+        if (!config.botToken || !config.chatId) {
+            console.warn('Telegram non configuré dans l\'Admin (clés manquantes).');
             return { success: false };
         }
 
         try {
-            const response = await fetch(`https://api.telegram.org/bot${this.BOT_TOKEN}/sendMessage`, {
+            const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    chat_id: this.CHAT_ID,
+                    chat_id: config.chatId,
                     text: message,
                     parse_mode: 'HTML',
                 }),

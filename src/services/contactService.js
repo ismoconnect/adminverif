@@ -1,4 +1,5 @@
 import { db } from '../lib/firebase'
+import { dualUpdateDoc, dualDeleteDoc } from '../utils/multiDbWriter'
 import { 
   collection, 
   doc, 
@@ -7,8 +8,6 @@ import {
   query, 
   where, 
   orderBy,
-  updateDoc, 
-  deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore'
 
@@ -58,7 +57,7 @@ export const getContactMessage = async (messageId) => {
 // Fonction pour marquer un message comme lu
 export const markMessageAsRead = async (messageId) => {
   try {
-    await updateDoc(doc(db, CONTACT_COLLECTION, messageId), {
+    await dualUpdateDoc(CONTACT_COLLECTION, messageId, {
       isRead: true,
       readAt: serverTimestamp(),
       readBy: 'admin' // Vous pouvez passer l'ID de l'admin connecté
@@ -74,7 +73,7 @@ export const markMessageAsRead = async (messageId) => {
 // Fonction pour marquer un message comme non lu
 export const markMessageAsUnread = async (messageId) => {
   try {
-    await updateDoc(doc(db, CONTACT_COLLECTION, messageId), {
+    await dualUpdateDoc(CONTACT_COLLECTION, messageId, {
       isRead: false,
       readAt: null,
       readBy: null
@@ -90,7 +89,7 @@ export const markMessageAsUnread = async (messageId) => {
 // Fonction pour supprimer un message de contact
 export const deleteContactMessage = async (messageId) => {
   try {
-    await deleteDoc(doc(db, CONTACT_COLLECTION, messageId))
+    await dualDeleteDoc(CONTACT_COLLECTION, messageId)
     
     return { success: true }
   } catch (error) {

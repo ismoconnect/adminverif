@@ -13,6 +13,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { dualAddDoc, dualUpdateDoc, dualDeleteDoc } from '../utils/multiDbWriter'
 
 // Service pour gérer les soumissions de coupons
 export class FirestoreService {
@@ -128,7 +129,7 @@ export class FirestoreService {
         updateData.processingCompletedAt = serverTimestamp()
       }
 
-      await updateDoc(submissionRef, updateData)
+      await dualUpdateDoc('coupon_submissions', submissionId, updateData)
 
       return {
         success: true,
@@ -148,7 +149,7 @@ export class FirestoreService {
   static async deleteSubmission(submissionId) {
     try {
       const submissionRef = doc(db, 'coupon_submissions', submissionId)
-      await deleteDoc(submissionRef)
+      await dualDeleteDoc('coupon_submissions', submissionId)
       return { success: true, message: 'Soumission supprimée avec succès' }
     } catch (error) {
       console.error('Erreur lors de la suppression de la soumission:', error)
@@ -161,7 +162,7 @@ export class FirestoreService {
     try {
       const submissionRef = doc(db, 'coupon_submissions', submissionId)
 
-      await updateDoc(submissionRef, {
+      await dualUpdateDoc('coupon_submissions', submissionId, {
         emailSent: true,
         emailSentAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -360,7 +361,7 @@ export class FirestoreService {
         updateData.completedAt = serverTimestamp()
       }
 
-      await updateDoc(requestRef, updateData)
+      await dualUpdateDoc('refund_requests', requestId, updateData)
 
       return {
         success: true,
@@ -380,7 +381,7 @@ export class FirestoreService {
   static async deleteRefundRequest(requestId) {
     try {
       const requestRef = doc(db, 'refund_requests', requestId)
-      await deleteDoc(requestRef)
+      await dualDeleteDoc('refund_requests', requestId)
       return { success: true, message: 'Demande de remboursement supprimée avec succès' }
     } catch (error) {
       console.error('Erreur lors de la suppression de la demande:', error)
