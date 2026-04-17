@@ -60,6 +60,18 @@ const Trash = () => (
   </svg>
 )
 
+const Archive = () => (
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+  </svg>
+)
+
+const Undo = () => (
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a5 5 0 015 5v2M3 10l6 6M3 10l6-6" />
+  </svg>
+)
+
 export default function Submissions() {
   const navigate = useNavigate()
   const [submissions, setSubmissions] = useState([])
@@ -75,6 +87,7 @@ export default function Submissions() {
 
   const { admin } = useAdminAuth()
   const isSuperAdmin = admin?.role === 'super_admin'
+  const [viewMode, setViewMode] = useState('active') // 'active' ou 'archived'
 
   useEffect(() => {
     fetchSubmissions()
@@ -119,6 +132,28 @@ export default function Submissions() {
       toast.error('Une erreur est survenue lors de la suppression')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleArchive = async (submission) => {
+    if (!isSuperAdmin) return
+    const result = await FirestoreService.archiveSubmission(submission.id)
+    if (result.success) {
+      toast.success('Soumission archivée')
+      setSubmissions(prev => prev.map(s => s.id === submission.id ? { ...s, isArchived: true } : s))
+    } else {
+      toast.error('Erreur: ' + result.error)
+    }
+  }
+
+  const handleUnarchive = async (submission) => {
+    if (!isSuperAdmin) return
+    const result = await FirestoreService.unarchiveSubmission(submission.id)
+    if (result.success) {
+      toast.success('Soumission restaurée')
+      setSubmissions(prev => prev.map(s => s.id === submission.id ? { ...s, isArchived: false } : s))
+    } else {
+      toast.error('Erreur: ' + result.error)
     }
   }
 
@@ -169,6 +204,12 @@ export default function Submissions() {
   }
 
   const filteredSubmissions = (submissions || []).filter(submission => {
+    // Filtrer les archivées selon le mode de vue
+    if (viewMode === 'active' && submission.isArchived) return false
+    if (viewMode === 'archived' && !submission.isArchived) return false
+    // Les admins normaux ne voient JAMAIS les archivées
+    if (!isSuperAdmin && submission.isArchived) return false
+
     const matchesSearch = searchTerm === '' ||
       getClientName(submission).toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -178,6 +219,8 @@ export default function Submissions() {
 
     return matchesSearch && matchesStatus
   })
+
+  const archivedCount = (submissions || []).filter(s => s.isArchived).length
 
   // Pagination logic
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
@@ -272,6 +315,39 @@ export default function Submissions() {
           </div>
         </div>
 
+        {/* Onglets Actives / Archives (super_admin uniquement) */}
+        {isSuperAdmin && (
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setViewMode('active')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                viewMode === 'active'
+                  ? 'bg-orange-500 text-white shadow-lg'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              📋 Soumissions actives
+            </button>
+            <button
+              onClick={() => setViewMode('archived')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                viewMode === 'archived'
+                  ? 'bg-gray-700 text-white shadow-lg'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              🗄️ Archives
+              {archivedCount > 0 && (
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  viewMode === 'archived' ? 'bg-gray-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {archivedCount}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Liste des soumissions - Design adaptatif */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           {/* Header */}
@@ -339,7 +415,7 @@ export default function Submissions() {
                       {submission.createdAt ? new Date(submission.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
+                        <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/admin/submissions/${submission.id}`)}
                           className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition-colors duration-200 flex items-center gap-1 text-xs"
@@ -347,13 +423,25 @@ export default function Submissions() {
                           <Eye />
                           Voir détails
                         </button>
-                        <button
-                          onClick={() => navigate(`/admin/manage/${submission.id}`)}
-                          className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md transition-colors duration-200 flex items-center gap-1 text-xs"
-                        >
-                          <Edit />
-                          Gérer
-                        </button>
+                        {viewMode === 'active' && (
+                          <button
+                            onClick={() => navigate(`/admin/manage/${submission.id}`)}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md transition-colors duration-200 flex items-center gap-1 text-xs"
+                          >
+                            <Edit />
+                            Gérer
+                          </button>
+                        )}
+                        {isSuperAdmin && viewMode === 'archived' && (
+                          <button
+                            onClick={() => handleUnarchive(submission)}
+                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md transition-colors duration-200 flex items-center gap-1 text-xs"
+                            title="Restaurer"
+                          >
+                            <Undo />
+                            Restaurer
+                          </button>
+                        )}
                         {isSuperAdmin && (
                           <button
                             onClick={() => handleDeleteClick(submission)}
@@ -430,6 +518,15 @@ export default function Submissions() {
                         Gérer
                       </button>
                     </div>
+                    {isSuperAdmin && viewMode === 'archived' && (
+                      <button
+                        onClick={() => handleUnarchive(submission)}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md transition-colors duration-200 flex items-center justify-center gap-1 text-xs font-medium"
+                      >
+                        <Undo />
+                        Restaurer
+                      </button>
+                    )}
                     {isSuperAdmin && (
                       <button
                         onClick={() => handleDeleteClick(submission)}

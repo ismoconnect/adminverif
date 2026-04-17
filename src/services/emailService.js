@@ -13,8 +13,8 @@ export class EmailService {
     if (result.success && result.data) {
       const d = result.data;
       
-      // Vérifier si le service est activé
-      if (d.emailjs_c1_enabled === false) {
+      // Vérifier si le service est activé (bloque aussi si undefined/absent)
+      if (d.emailjs_c1_enabled !== true) {
         console.warn('⚠️ Service EmailJS (Admin/Coupons) désactivé via les paramètres.');
         return null;
       }

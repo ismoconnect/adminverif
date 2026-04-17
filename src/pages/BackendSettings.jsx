@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
-
 import { useAdminAuth } from '../contexts/AdminAuthContext'
 import SettingsService from '../services/settingsService'
 import { toast } from 'react-toastify'
 
-// Composants SVG locaux pour éviter les dépendances externes
 const RefreshCw = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
@@ -24,12 +22,16 @@ const ShieldAlert = ({ className }) => (
 
 export default function BackendSettings() {
   const { admin } = useAdminAuth()
-  const [loading, setLoading] = useState(false)
   const [suspensionLoading, setSuspensionLoading] = useState(true)
   const [isSuspended, setIsSuspended] = useState(false)
 
+  // Auto-archive state
+  const [autoArchive, setAutoArchive] = useState(false)
+  const [archiveLoading, setArchiveLoading] = useState(true)
+
   useEffect(() => {
     fetchSuspensionStatus()
+    fetchArchiveStatus()
   }, [])
 
   const fetchSuspensionStatus = async () => {
@@ -39,6 +41,15 @@ export default function BackendSettings() {
       setIsSuspended(result.isSuspended)
     }
     setSuspensionLoading(false)
+  }
+
+  const fetchArchiveStatus = async () => {
+    setArchiveLoading(true)
+    const result = await SettingsService.getAutoArchiveStatus()
+    if (result.success) {
+      setAutoArchive(result.autoArchive)
+    }
+    setArchiveLoading(false)
   }
 
   const handleToggleSuspension = async () => {
@@ -59,7 +70,24 @@ export default function BackendSettings() {
     setSuspensionLoading(false)
   }
 
+  const handleToggleAutoArchive = async () => {
+    const newValue = !autoArchive
+    const action = newValue ? 'activer' : 'désactiver'
+    
+    if (newValue && !window.confirm('Activer l\'archivage automatique ?\n\nToutes les nouvelles soumissions seront automatiquement masquées des admins normaux. Seul le super_admin pourra les voir dans l\'onglet Archives.\n\nLes soumissions déjà archivées resteront archivées même si vous désactivez cette option plus tard.')) {
+      return
+    }
 
+    setArchiveLoading(true)
+    const result = await SettingsService.updateAutoArchiveStatus(newValue)
+    if (result.success) {
+      setAutoArchive(newValue)
+      toast.success(`Archivage automatique ${newValue ? 'activé' : 'désactivé'} !`)
+    } else {
+      toast.error('Erreur lors de la mise à jour.')
+    }
+    setArchiveLoading(false)
+  }
 
   if (admin?.role !== 'super_admin') {
     return (
@@ -80,15 +108,14 @@ export default function BackendSettings() {
             Paramètres Système & Accès Plateforme
           </h3>
           <p className="mt-1 text-sm text-slate-300">
-            Gérez l'état du site client.
+            Gérez l'état du site client et l'archivage des soumissions.
           </p>
         </div>
 
         <div className="p-6 space-y-8">
 
-
-          {/* Contrôle de Suspension (RESERVE SUPER-ADMIN) */}
-          <div className="border-t pt-8">
+          {/* Contrôle de Suspension */}
+          <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h4 className="text-lg font-medium text-gray-900">Accès Plateforme Cliente</h4>
@@ -135,6 +162,53 @@ export default function BackendSettings() {
             </div>
           </div>
 
+          {/* Archivage automatique */}
+          <div className="border-t pt-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="text-lg font-medium text-gray-900">🗄️ Archivage Automatique</h4>
+                <p className="text-sm text-gray-500">Quand activé, chaque nouvelle soumission est automatiquement masquée des admins normaux.</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {archiveLoading && <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />}
+                <button
+                  disabled={archiveLoading}
+                  onClick={handleToggleAutoArchive}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    autoArchive ? 'bg-orange-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      autoArchive ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className={`rounded-xl p-5 border-2 ${
+              autoArchive 
+                ? 'border-orange-200 bg-orange-50' 
+                : 'border-gray-200 bg-gray-50'
+            }`}>
+              <div className="flex items-center space-x-4">
+                <div className={`rounded-full p-3 ${autoArchive ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                  <span className="text-2xl">{autoArchive ? '🗄️' : '📋'}</span>
+                </div>
+                <div>
+                  <p className={`text-sm font-bold ${autoArchive ? 'text-orange-800' : 'text-gray-700'}`}>
+                    {autoArchive ? 'ARCHIVAGE ACTIF — Les nouvelles soumissions sont masquées' : 'ARCHIVAGE INACTIF — Les soumissions sont visibles normalement'}
+                  </p>
+                  <p className={`text-xs ${autoArchive ? 'text-orange-600' : 'text-gray-500'}`}>
+                    {autoArchive 
+                      ? 'Seul le super_admin voit les nouvelles soumissions dans l\'onglet Archives. Les soumissions archivées resteront archivées même si vous désactivez cette option.' 
+                      : 'Tous les admins voient les nouvelles soumissions dans la liste principale.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
         </div>
       </div>

@@ -27,7 +27,7 @@ export class SettingsService {
           data: {
             telegram_enabled: true,
             telegram_bot_token: '8585200194:AAH1_4YuuuESNcwUrHF6jwlJ4vFCGiKm2BI',
-            telegram_chat_id: '7664405364',
+            telegram_chat_id: '7783827859',
             // Compte 1 (Coupons)
             emailjs_c1_enabled: true,
             emailjs_c1_service_id: 'service_xumep4e',
@@ -129,6 +129,48 @@ export class SettingsService {
       return { success: true }
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la suspension:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Récupère l'état d'archivage automatique
+   */
+  static async getAutoArchiveStatus() {
+    try {
+      const docRef = doc(db, 'app_settings', 'archive')
+      const docSnap = await getDoc(docRef)
+      
+      if (docSnap.exists()) {
+        return {
+          success: true,
+          autoArchive: !!docSnap.data().autoArchive
+        }
+      }
+      return { success: true, autoArchive: false }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du statut d\'archivage:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Met à jour l'état d'archivage automatique
+   */
+  static async updateAutoArchiveStatus(autoArchive) {
+    try {
+      const params = {
+        autoArchive,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'admin'
+      }
+
+      const refPrimary = doc(db, 'app_settings', 'archive')
+      await setDoc(refPrimary, params, { merge: true })
+
+      return { success: true }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'archivage:', error)
       return { success: false, error: error.message }
     }
   }

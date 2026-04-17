@@ -2,52 +2,52 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permettre l'écriture pour les soumissions (sans authentification)
+
+    // ===== SOUMISSIONS DE COUPONS =====
+    // Clients : lecture + création
+    // Admins : mise à jour + suppression (contrôlé côté app par rôle)
     match /coupon_submissions/{document} {
-      allow create: if true;  // Permettre la création
-      allow read: if true;    // Permettre la lecture
-      allow update: if true;  // AJOUTEZ CETTE LIGNE pour permettre la mise à jour
-      allow delete: if false; // Interdire la suppression
-    }
-    
-    // Permettre l'écriture pour les messages de contact
-    match /contact_messages/{document} {
-      allow create: if true;
       allow read: if true;
-      allow update, delete: if true;  // MODIFIÉ: Permettre la mise à jour et suppression pour les admins
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
-    
-    // NOUVELLES RÈGLES POUR LES REMBOURSEMENTS
+
+    // ===== DEMANDES DE REMBOURSEMENT =====
     match /refund_requests/{document} {
-      allow create: if true;  // Permettre la création des demandes de remboursement
-      allow read: if true;    // Permettre la lecture
-      allow update: if true;  // Permettre la mise à jour (pour l'admin)
-      allow delete: if false; // Interdire la suppression
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
-    
-    // Règles pour la collection des administrateurs
-    match /admins/{document} {
-      allow read, write: if true;  // Accès complet pour l'admin
+
+    // ===== MESSAGES DE CONTACT =====
+    match /contact_messages/{document} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
-    
-    // Règles pour la collection des soumissions (accès admin)
-    match /submissions/{document} {
-      allow read, write: if true;  // Accès complet pour l'admin
-    }
-    
-    // NOUVELLES RÈGLES POUR LA SUSPENSION
-    match /app_settings/{document} {
-      allow read: if true;        // Tout le monde peut voir si le site est suspendu
-      allow write: if true;       // Idem que pour settings, modifiable par l'admin v3
-    }
-    
-    // NOUVELLES RÈGLES POUR LES PARAMÈTRES (API, etc)
+
+    // ===== PARAMÈTRES API (EmailJS, Telegram) =====
     match /settings/{document} {
-      allow read: if true;        // Permettre la lecture pour tout le monde (Client & Admin)
-      allow write: if true;       // En production, devrait être limité aux super_admin avec auth.uid
+      allow read: if true;
+      allow write: if true;
     }
-    
-    // Règles par défaut
+
+    // ===== PARAMÈTRES APP (Suspension du site) =====
+    match /app_settings/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ===== COLLECTION ADMINS =====
+    match /admins/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ===== RÈGLE PAR DÉFAUT : TOUT BLOQUER =====
     match /{document=**} {
       allow read, write: if false;
     }

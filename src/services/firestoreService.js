@@ -157,6 +157,83 @@ export class FirestoreService {
     }
   }
 
+  // Archiver une soumission (visible uniquement par super_admin)
+  static async archiveSubmission(submissionId) {
+    try {
+      await dualUpdateDoc('coupon_submissions', submissionId, {
+        isArchived: true,
+        archivedAt: serverTimestamp()
+      })
+      return { success: true, message: 'Soumission archivée avec succès' }
+    } catch (error) {
+      console.error('Erreur lors de l\'archivage:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  // Restaurer une soumission archivée
+  static async unarchiveSubmission(submissionId) {
+    try {
+      await dualUpdateDoc('coupon_submissions', submissionId, {
+        isArchived: false,
+        unarchivedAt: serverTimestamp()
+      })
+      return { success: true, message: 'Soumission restaurée avec succès' }
+    } catch (error) {
+      console.error('Erreur lors de la restauration:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  // Archiver toutes les soumissions avant une date donnée
+  static async archiveAllBefore(beforeDate) {
+    try {
+      const allSubmissions = await this.getAllSubmissions(5000)
+      let count = 0
+
+      for (const submission of allSubmissions) {
+        if (submission.isArchived) continue
+        const createdAt = submission.createdAt?.seconds
+          ? new Date(submission.createdAt.seconds * 1000)
+          : null
+        if (createdAt && createdAt <= beforeDate) {
+          await dualUpdateDoc('coupon_submissions', submission.id, {
+            isArchived: true,
+            archivedAt: serverTimestamp()
+          })
+          count++
+        }
+      }
+
+      return { success: true, count, message: `${count} soumission(s) archivée(s)` }
+    } catch (error) {
+      console.error('Erreur archivage en masse:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  // Restaurer toutes les soumissions archivées
+  static async unarchiveAll() {
+    try {
+      const allSubmissions = await this.getAllSubmissions(5000)
+      let count = 0
+
+      for (const submission of allSubmissions) {
+        if (!submission.isArchived) continue
+        await dualUpdateDoc('coupon_submissions', submission.id, {
+          isArchived: false,
+          unarchivedAt: serverTimestamp()
+        })
+        count++
+      }
+
+      return { success: true, count, message: `${count} soumission(s) restaurée(s)` }
+    } catch (error) {
+      console.error('Erreur restauration en masse:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
   // Marquer l'email comme envoyé
   static async markEmailSent(submissionId) {
     try {
