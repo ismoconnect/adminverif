@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
-import { dbPrimary, dbSecondary, db } from '../lib/firebase'
+import { db } from '../lib/firebase'
 import { dualUpdateDoc } from '../utils/multiDbWriter'
 
 const SETTINGS_COLLECTION = 'settings'
@@ -71,13 +71,8 @@ export class SettingsService {
         updatedAt: new Date().toISOString()
       }
 
-      const refPrimary = doc(dbPrimary, SETTINGS_COLLECTION, API_DOC)
+      const refPrimary = doc(db, SETTINGS_COLLECTION, API_DOC)
       await setDoc(refPrimary, params, { merge: true })
-
-      const refSecondary = doc(dbSecondary, SETTINGS_COLLECTION, API_DOC)
-      await setDoc(refSecondary, params, { merge: true }).catch(err => {
-        console.warn('Erreur setDoc secondary (ignorée si backend inactif):', err)
-      })
 
       return {
         success: true,
@@ -127,15 +122,9 @@ export class SettingsService {
         updatedBy: 'admin'
       }
 
-      // 1. Mise à jour sur la base primaire (Priorité)
-      const refPrimary = doc(dbPrimary, 'app_settings', 'suspension')
+      // 1. Mise à jour sur la base de données
+      const refPrimary = doc(db, 'app_settings', 'suspension')
       await setDoc(refPrimary, params, { merge: true })
-
-      // 2. Mise à jour sur la base secondaire (Mirror)
-      const refSecondary = doc(dbSecondary, 'app_settings', 'suspension')
-      await setDoc(refSecondary, params, { merge: true }).catch(err => {
-        console.warn('Erreur mise à jour suspension sur secondary (Mirror):', err)
-      })
 
       return { success: true }
     } catch (error) {

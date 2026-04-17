@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { currentBackend, switchBackendView } from '../lib/firebase'
+
 import { useAdminAuth } from '../contexts/AdminAuthContext'
 import SettingsService from '../services/settingsService'
 import { toast } from 'react-toastify'
@@ -59,10 +59,7 @@ export default function BackendSettings() {
     setSuspensionLoading(false)
   }
 
-  const handleSwitch = (type) => {
-    setLoading(true)
-    switchBackendView(type)
-  }
+
 
   if (admin?.role !== 'super_admin') {
     return (
@@ -80,35 +77,15 @@ export default function BackendSettings() {
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-4 py-5 border-b border-gray-200 sm:px-6 bg-gradient-to-r from-slate-800 to-slate-900">
           <h3 className="text-lg leading-6 font-medium text-white">
-            Configuration du Backend & Migration
+            Paramètres Système & Accès Plateforme
           </h3>
           <p className="mt-1 text-sm text-slate-300">
-            Gérez la transition entre vos projets Firebase et la duplication des données.
+            Gérez l'état du site client.
           </p>
         </div>
 
         <div className="p-6 space-y-8">
-          {/* État de la Duplication */}
-          <div>
-            <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              Statut de la Duplication : ACTIVÉ
-            </h4>
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-blue-700">
-                    Chaque action d'écriture (nouvelle soumission, mise à jour de statut, nouvel admin) est actuellement envoyée **simultanément** vers vos deux projets Firebase.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           {/* Contrôle de Suspension (RESERVE SUPER-ADMIN) */}
           <div className="border-t pt-8">
@@ -158,59 +135,7 @@ export default function BackendSettings() {
             </div>
           </div>
 
-          {/* Sélecteur de Backend de VUE */}
-          <div className="border-t pt-8">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">Sélecteur de Backend (Vue)</h4>
-            <p className="text-sm text-gray-500 mb-6">
-              Choisissez le projet Firebase que vous souhaitez visualiser dans ce tableau de bord. 
-              <br /><span className="text-orange-600 font-medium">Note : Changer la vue rechargera la page.</span>
-            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Option Nouveau Backend (Primaire) */}
-              <div 
-                className={`cursor-pointer rounded-xl border-2 p-5 transition-all ${
-                  currentBackend === 'primary' 
-                    ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
-                    : 'border-gray-200 hover:border-orange-200'
-                }`}
-                onClick={() => !loading && currentBackend !== 'primary' && handleSwitch('primary')}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-gray-900">NOUVEAU BACKEND</span>
-                  {currentBackend === 'primary' && (
-                    <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full uppercase">Actif</span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-600 mb-1">ID Projet: adminmyverif</p>
-                <p className="text-[11px] text-gray-400">C'est le backend principal par défaut pour les nouveaux utilisateurs.</p>
-              </div>
-
-              {/* Option Ancien Backend (Secondaire) */}
-              <div 
-                className={`cursor-pointer rounded-xl border-2 p-5 transition-all ${
-                  currentBackend === 'secondary' 
-                    ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200' 
-                    : 'border-gray-200 hover:border-purple-200'
-                }`}
-                onClick={() => !loading && currentBackend !== 'secondary' && handleSwitch('secondary')}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-gray-900">ANCIEN BACKEND</span>
-                  {currentBackend === 'secondary' && (
-                    <span className="bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full uppercase">Actif</span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-600 mb-1">ID Projet: myverif-67454</p>
-                <p className="text-[11px] text-gray-400">À utiliser pour vérifier les anciennes données non migrées.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Info de Sécurité */}
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 text-xs text-yellow-800">
-            <strong>IMPORTANT :</strong> Le système de duplication est permanent. Même si vous visualisez l'ancien backend, vos nouvelles écritures seront toujours copiées sur le nouveau pour garantir que rien n'est perdu durant la transition.
-          </div>
         </div>
       </div>
     </div>
