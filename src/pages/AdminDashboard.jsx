@@ -46,18 +46,22 @@ export default function AdminDashboard() {
         totalAmount: globalStats.totalAmount || 0
       })
 
-      // 2. Récupérer UNIQUEMENT les 3 dernières soumissions pour l'affichage de la liste
+      // 2. Récupérer les dernières soumissions actives pour l'affichage de la liste
+      // On en prend 10 par précaution pour être sûr d'en avoir au moins 3 actives
       const submissionsQuery = query(
         collection(db, 'coupon_submissions'),
         orderBy('createdAt', 'desc'),
-        limit(3)
+        limit(10)
       )
 
       const querySnapshot = await getDocs(submissionsQuery)
-      const submissionsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      const submissionsData = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(s => !s.isArchived) // Exclure les archivées
+        .slice(0, 3) // Ne garder que les 3 dernières actives
 
       setSubmissions(submissionsData)
 

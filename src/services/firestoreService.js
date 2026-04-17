@@ -276,7 +276,7 @@ export class FirestoreService {
       }
 
       const stats = {
-        total: allSubmissions.length,
+        total: 0,
         pending: 0,
         verified: 0,
         rejected: 0,
@@ -285,6 +285,12 @@ export class FirestoreService {
       }
 
       allSubmissions.forEach(submission => {
+        // Ignorer les soumissions archivées pour les statistiques du dashboard
+        if (submission.isArchived) return
+
+        // Incrémenter le total des soumissions actives
+        stats.total++
+
         // Compter par statut
         if (submission.status) {
           stats[submission.status] = (stats[submission.status] || 0) + 1

@@ -103,6 +103,9 @@ export default function Statistics() {
 
   const dailyStats = getLast7Days()
   submissions.forEach(s => {
+    // Ignorer les soumissions archivées
+    if (s.isArchived) return
+
     if (s.createdAt) {
       const date = new Date(s.createdAt.seconds * 1000).toISOString().split('T')[0]
       const dayIndex = dailyStats.findIndex(day => day.date === date)
