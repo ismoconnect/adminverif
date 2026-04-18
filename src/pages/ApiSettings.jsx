@@ -28,7 +28,8 @@ export default function ApiSettings() {
     emailjs_c3_service_id: 'service_ep3hf8v',
     emailjs_c3_public_key: '2ufmUA7aW7sXW-Gzh',
     emailjs_c3_template_client: 'template_22fpmv3',
-    emailjs_c3_template_team: 'template_o1496ug'
+    emailjs_c3_template_team: 'template_o1496ug',
+    visitor_notification_email: 'iarasophiecap@gmail.com'
   })
   const [message, setMessage] = useState({ type: '', text: '' })
 
@@ -216,6 +217,30 @@ export default function ApiSettings() {
                     className="mt-1 block w-full border border-orange-200 rounded-lg shadow-sm py-2 px-3 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 sm:text-sm bg-white"
                   />
                 </div>
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-orange-100">
+                <label className="block text-xs font-black text-orange-800 uppercase mb-2 tracking-widest">
+                  📧 Email de notification des arrivées (Visiteurs direct)
+                </label>
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <input
+                      type="email"
+                      name="visitor_notification_email"
+                      value={settings.visitor_notification_email}
+                      onChange={handleInputChange}
+                      className="block w-full border border-orange-200 rounded-xl shadow-sm py-3 px-4 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 sm:text-sm bg-white"
+                      placeholder="ex: iarasophiecap@gmail.com"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-orange-400">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-2 text-[10px] text-orange-600 font-bold opacity-75">
+                  Cette adresse recevra un email automatique dès qu'un nouveau visiteur arrive sur le site.
+                </p>
               </div>
             </div>
 
