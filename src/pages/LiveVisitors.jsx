@@ -91,6 +91,97 @@ export default function LiveVisitors() {
     return name;
   };
 
+  const [lastUpdatedKey, setLastUpdatedKey] = useState(null);
+  const [prevData, setPrevData] = useState({});
+
+  useEffect(() => {
+    if (selectedVisitor?.formData) {
+      const currentData = selectedVisitor.formData;
+      // Trouver la clé qui a changé
+      const changedKey = Object.keys(currentData).find(key => 
+        JSON.stringify(currentData[key]) !== JSON.stringify(prevData[key])
+      );
+      
+      if (changedKey) {
+        setLastUpdatedKey(changedKey);
+        // Reset l'ombrage après 2 secondes
+        const timer = setTimeout(() => setLastUpdatedKey(null), 2000);
+        setPrevData(currentData);
+        return () => clearTimeout(timer);
+      }
+      setPrevData(currentData);
+    }
+  }, [selectedVisitor?.formData]);
+
+  const formatRelativeTime = (timestamp) => {
+    if (!timestamp || typeof timestamp.toDate !== 'function') return '';
+    const date = timestamp.toDate();
+    const diffSeconds = Math.floor((currentTime - date) / 1000);
+    
+    if (diffSeconds < 60) return `À l'instant`;
+    if (diffSeconds < 3600) return `Il y a ${Math.floor(diffSeconds / 60)} min`;
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const DataRenderer = ({ data, parentKey = '' }) => {
+    if (!data || typeof data !== 'object') return <span className="text-slate-900 font-semibold">{String(data)}</span>;
+
+    const renderValue = (val, fullKey) => {
+      if (Array.isArray(val)) {
+        return (
+          <div className="space-y-3 mt-2">
+            {val.map((item, idx) => (
+              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="text-[10px] font-black text-blue-600 uppercase mb-3 flex items-center">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
+                  Élément #{idx + 1}
+                </div>
+                <DataRenderer data={item} parentKey={`${fullKey}.${idx}`} />
+              </div>
+            ))}
+          </div>
+        );
+      }
+      if (typeof val === 'object' && val !== null) {
+        return <DataRenderer data={val} parentKey={fullKey} />;
+      }
+      return <span className="text-slate-900 font-semibold">{String(val)}</span>;
+    };
+
+    // Trier les clés pour éviter les sauts aléatoires
+    const sortedEntries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+
+    return (
+      <div className="grid grid-cols-1 gap-1">
+        {sortedEntries.map(([key, value]) => {
+          // On n'affiche pas les valeurs null/undefined, mais on affiche les chaînes vides
+          // pour garder la place dans le layout et éviter les "sauts".
+          if (value === null || value === undefined) return null;
+          
+          const isUpdating = lastUpdatedKey === key;
+          
+          return (
+            <div 
+              key={key} 
+              className={`flex flex-col py-3 px-2 rounded-lg border-b border-slate-100 last:border-0 transition-all duration-500 ${
+                isUpdating ? 'bg-orange-50 border-l-2 border-l-orange-400 pl-3 translate-x-1 shadow-sm' : ''
+              }`}
+            >
+              <span className={`text-[10px] font-black uppercase tracking-widest mb-1 transition-colors ${
+                isUpdating ? 'text-orange-600' : 'text-slate-400'
+              }`}>
+                {key}
+              </span>
+              <div className="text-sm min-h-[1.25rem]">
+                {renderValue(value, key)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleDeleteVisitor = async (v, e) => {
     if (e) e.stopPropagation();
     if (window.confirm("Voulez-vous vraiment supprimer cet enregistrement définitivement ?")) {
@@ -144,14 +235,15 @@ export default function LiveVisitors() {
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-medium text-sm truncate">{getVisitorIdentity(v)}</span>
                       <div className="flex items-center">
-                        <span className="text-xs text-green-600 font-medium whitespace-nowrap ml-2">En ligne</span>
+                        <span className="text-[10px] text-gray-400 mr-2">{formatRelativeTime(v.lastActiveAt)}</span>
+                        <span className="text-xs text-green-600 font-medium whitespace-nowrap">En ligne</span>
                       </div>
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                       {v.formType || 'Page générale'}
                     </div>
                     <div className="text-[10px] text-gray-400 truncate mt-1" title={v.userAgent}>
-                      IP/Appareil: {v.userAgent ? v.userAgent.split(' ')[0] : 'Inconnu'}
+                      Appareil: {v.userAgent ? v.userAgent.split(' ')[0] : 'Inconnu'}
                     </div>
                   </button>
                 ))
@@ -178,11 +270,11 @@ export default function LiveVisitors() {
                   >
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-medium text-xs text-gray-600 truncate">{getVisitorIdentity(v)}</span>
-                      <div className="flex items-center">
-                        <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap ml-2 mr-2">Parti</span>
+                      <div className="flex items-center shrink-0">
+                        <span className="text-[10px] text-gray-400 mr-2">{formatRelativeTime(v.lastActiveAt)}</span>
                         <button 
                           onClick={(e) => handleDeleteVisitor(v, e)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
+                          className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
                           title="Supprimer"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -221,14 +313,13 @@ export default function LiveVisitors() {
               </div>
 
               {selectedVisitor.formData ? (
-                <div className="bg-gray-50 rounded-lg p-5 font-mono text-sm shadow-inner relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
-                    <svg className="w-24 h-24 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                <div className="bg-slate-50 rounded-2xl p-6 shadow-inner relative overflow-hidden border border-slate-100">
+                  <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none">
+                    <svg className="w-48 h-48 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
                   </div>
-                  <div className="max-h-96 overflow-y-auto relative z-10 w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2">
-                    <pre className="whitespace-pre-wrap text-gray-800">
-                      {JSON.stringify(selectedVisitor.formData, null, 2)}
-                    </pre>
+                  
+                  <div className="max-h-[500px] overflow-y-auto relative z-10 w-full scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent pr-4">
+                    <DataRenderer data={selectedVisitor.formData} />
                   </div>
                   
                   {selectedVisitor.status === 'active' && (
