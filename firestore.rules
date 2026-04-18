@@ -47,6 +47,18 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // ===== LIVE VISITORS =====
+    match /live_visitors/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ===== STATISTIQUES DES VISITEURS =====
+    match /visitor_stats/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // ===== RÈGLE PAR DÉFAUT : TOUT BLOQUER =====
     match /{document=**} {
       allow read, write: if false;

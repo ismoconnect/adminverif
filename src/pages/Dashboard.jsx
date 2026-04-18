@@ -57,10 +57,14 @@ export default function Dashboard() {
         setStats(statsResult.data)
       }
       
-      // Charger les soumissions récentes
-      const submissionsResult = await FirestoreService.getAllSubmissions(10)
+      // Charger les soumissions récentes (prendre une marge et filtrer les archivées)
+      const submissionsResult = await FirestoreService.getAllSubmissions(20)
       if (submissionsResult.success) {
-        setRecentSubmissions(submissionsResult.data)
+        setRecentSubmissions(
+          submissionsResult.data
+            .filter(s => !s.isArchived)
+            .slice(0, 10)
+        )
       }
       
     } catch (error) {

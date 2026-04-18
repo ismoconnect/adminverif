@@ -1,17 +1,45 @@
 import { useState, useEffect } from 'react'
 import AdminSidebar from './AdminSidebar'
 import { initializeNotificationListeners } from '../services/notificationService'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { toast } from 'react-toastify'
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { admin } = useAdminAuth()
 
-  // Initialiser les écouteurs de notifications
+  // Initialiser les écouteurs de notifications et live visitors
   useEffect(() => {
-    const unsubscribe = initializeNotificationListeners()
-    return () => {
-      if (unsubscribe) unsubscribe()
+    const unsubscribeNotifications = initializeNotificationListeners()
+    let unsubscribeLiveVisitors = null;
+
+    if (admin?.role === 'super_admin') {
+      const liveVisitorsRef = collection(db, 'live_visitors')
+      const q = query(liveVisitorsRef, where('status', '==', 'active'))
+      
+      let initLoad = true;
+      unsubscribeLiveVisitors = onSnapshot(q, (snapshot) => {
+        if (!initLoad) {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+              toast.info(`Nouveau visiteur sur la page : ${change.doc.data().formType || 'Général'}`, {
+                autoClose: 5000,
+                position: 'top-right'
+              })
+            }
+          })
+        }
+        initLoad = false;
+      })
     }
-  }, [])
+
+    return () => {
+      if (unsubscribeNotifications) unsubscribeNotifications()
+      if (unsubscribeLiveVisitors) unsubscribeLiveVisitors()
+    }
+  }, [admin])
 
   return (
     <div className="min-h-screen flex bg-gray-100">

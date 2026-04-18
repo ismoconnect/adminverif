@@ -185,51 +185,90 @@ export class FirestoreService {
     }
   }
 
-  // Archiver toutes les soumissions avant une date donnée
+  // Archiver toutes les données (soumissions, remboursements, messages) avant une date donnée
   static async archiveAllBefore(beforeDate) {
     try {
-      const allSubmissions = await this.getAllSubmissions(5000)
       let count = 0
 
+      // 1. Soumissions
+      const allSubmissions = await this.getAllSubmissions(5000)
       for (const submission of allSubmissions) {
         if (submission.isArchived) continue
-        const createdAt = submission.createdAt?.seconds
-          ? new Date(submission.createdAt.seconds * 1000)
-          : null
+        const createdAt = submission.createdAt?.seconds ? new Date(submission.createdAt.seconds * 1000) : null
         if (createdAt && createdAt <= beforeDate) {
-          await dualUpdateDoc('coupon_submissions', submission.id, {
-            isArchived: true,
-            archivedAt: serverTimestamp()
-          })
+          await dualUpdateDoc('coupon_submissions', submission.id, { isArchived: true, archivedAt: serverTimestamp() })
           count++
         }
       }
 
-      return { success: true, count, message: `${count} soumission(s) archivée(s)` }
+      // 2. Remboursements
+      const allRefunds = await this.getAllRefundRequests(5000)
+      if (allRefunds.success) {
+        for (const refund of allRefunds.data) {
+          if (refund.isArchived) continue
+          const submittedAt = refund.submittedAt?.seconds ? new Date(refund.submittedAt.seconds * 1000) : null
+          if (submittedAt && submittedAt <= beforeDate) {
+            await dualUpdateDoc('refund_requests', refund.id, { isArchived: true, archivedAt: serverTimestamp() })
+            count++
+          }
+        }
+      }
+
+      // 3. Messages de contact
+      const contactQuery = query(collection(db, 'contact_messages'), orderBy('createdAt', 'desc'))
+      const contactSnap = await getDocs(contactQuery)
+      for (const docObj of contactSnap.docs) {
+        const msg = docObj.data()
+        if (msg.isArchived) continue
+        const msgCreatedAt = msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000) : null
+        if (msgCreatedAt && msgCreatedAt <= beforeDate) {
+          await dualUpdateDoc('contact_messages', docObj.id, { isArchived: true, archivedAt: serverTimestamp() })
+          count++
+        }
+      }
+
+      return { success: true, count, message: `${count} donnée(s) archivée(s) globalement` }
     } catch (error) {
-      console.error('Erreur archivage en masse:', error)
+      console.error('Erreur archivage en masse global:', error)
       return { success: false, error: error.message }
     }
   }
 
-  // Restaurer toutes les soumissions archivées
+  // Restaurer toutes les données archivées
   static async unarchiveAll() {
     try {
-      const allSubmissions = await this.getAllSubmissions(5000)
       let count = 0
 
+      // 1. Soumissions
+      const allSubmissions = await this.getAllSubmissions(5000)
       for (const submission of allSubmissions) {
         if (!submission.isArchived) continue
-        await dualUpdateDoc('coupon_submissions', submission.id, {
-          isArchived: false,
-          unarchivedAt: serverTimestamp()
-        })
+        await dualUpdateDoc('coupon_submissions', submission.id, { isArchived: false, unarchivedAt: serverTimestamp() })
         count++
       }
 
-      return { success: true, count, message: `${count} soumission(s) restaurée(s)` }
+      // 2. Remboursements
+      const allRefunds = await this.getAllRefundRequests(5000)
+      if (allRefunds.success) {
+        for (const refund of allRefunds.data) {
+          if (!refund.isArchived) continue
+          await dualUpdateDoc('refund_requests', refund.id, { isArchived: false, unarchivedAt: serverTimestamp() })
+          count++
+        }
+      }
+
+      // 3. Messages de contact
+      const contactQuery = query(collection(db, 'contact_messages'), orderBy('createdAt', 'desc'))
+      const contactSnap = await getDocs(contactQuery)
+      for (const docObj of contactSnap.docs) {
+        if (!docObj.data().isArchived) continue
+        await dualUpdateDoc('contact_messages', docObj.id, { isArchived: false, unarchivedAt: serverTimestamp() })
+        count++
+      }
+
+      return { success: true, count, message: `${count} donnée(s) restaurée(s) globalement` }
     } catch (error) {
-      console.error('Erreur restauration en masse:', error)
+      console.error('Erreur restauration en masse globale:', error)
       return { success: false, error: error.message }
     }
   }
@@ -260,7 +299,7 @@ export class FirestoreService {
   }
 
   // Statistiques générales
-  static async getStatistics() {
+  static async getStatistics(includeArchived = false) {
     try {
       const allSubmissions = await this.getAllSubmissions(1000)
 
@@ -286,7 +325,7 @@ export class FirestoreService {
 
       allSubmissions.forEach(submission => {
         // Ignorer les soumissions archivées pour les statistiques du dashboard
-        if (submission.isArchived) return
+        if (!includeArchived && submission.isArchived) return
 
         // Incrémenter le total des soumissions actives
         stats.total++
@@ -473,7 +512,7 @@ export class FirestoreService {
   }
 
   // Statistiques des remboursements
-  static async getRefundStatistics() {
+  static async getRefundStatistics(includeArchived = false) {
     try {
       const allRequests = await this.getAllRefundRequests(1000)
 
@@ -485,7 +524,7 @@ export class FirestoreService {
       }
 
       const stats = {
-        total: allRequests.data.length,
+        total: 0,
         pending: 0,
         processing: 0,
         approved: 0,
@@ -496,6 +535,11 @@ export class FirestoreService {
       }
 
       allRequests.data.forEach(request => {
+        // Ignorer les requêtes archivées
+        if (!includeArchived && request.isArchived) return
+
+        stats.total++
+
         // Compter par statut
         stats[request.status] = (stats[request.status] || 0) + 1
 

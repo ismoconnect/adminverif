@@ -27,6 +27,7 @@ import ChangePassword from './pages/ChangePassword'
 import Notifications from './pages/Notifications'
 import BackendSettings from './pages/BackendSettings'
 import ApiSettings from './pages/ApiSettings'
+import LiveVisitors from './pages/LiveVisitors'
 import Layout from './components/Layout'
 
 function App() {
@@ -132,6 +133,13 @@ function App() {
               <ProtectedRoute requiredRole="super_admin">
                 <AdminLayout>
                   <ApiSettings />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/live-visitors" element={
+              <ProtectedRoute requiredRole="super_admin">
+                <AdminLayout>
+                  <LiveVisitors />
                 </AdminLayout>
               </ProtectedRoute>
             } />

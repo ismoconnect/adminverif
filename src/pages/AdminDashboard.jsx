@@ -36,8 +36,10 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
 
+      const isSuperAdmin = admin?.role === 'super_admin'
+
       // 1. Récupérer les statistiques globales depuis FirestoreService
-      const globalStats = await FirestoreService.getStatistics()
+      const globalStats = await FirestoreService.getStatistics(isSuperAdmin)
       setStats({
         total: globalStats.total || 0,
         pending: globalStats.pending || 0,
@@ -60,7 +62,7 @@ export default function AdminDashboard() {
           id: doc.id,
           ...doc.data()
         }))
-        .filter(s => !s.isArchived) // Exclure les archivées
+        .filter(s => isSuperAdmin ? true : !s.isArchived) // Exclure les archivées uniquement pour admin normaux
         .slice(0, 3) // Ne garder que les 3 dernières actives
 
       setSubmissions(submissionsData)
@@ -75,16 +77,21 @@ export default function AdminDashboard() {
 
   const fetchRefundData = async () => {
     try {
+      const isSuperAdmin = admin?.role === 'super_admin'
+
       // Récupérer les statistiques de remboursement
-      const statsResult = await FirestoreService.getRefundStatistics()
+      const statsResult = await FirestoreService.getRefundStatistics(isSuperAdmin)
       if (statsResult.success) {
         setRefundStats(statsResult.data)
       }
 
       // Récupérer les remboursements récents
-      const recentResult = await FirestoreService.getAllRefundRequests(5)
+      const recentResult = await FirestoreService.getAllRefundRequests(20) // Prendre une marge pour compenser les éventuels archivés
       if (recentResult.success) {
-        setRecentRefunds(recentResult.data)
+        const activeRefunds = recentResult.data
+          .filter(r => isSuperAdmin ? true : !r.isArchived) // Exclure les archivés si non super admin
+          .slice(0, 5) // Ne garder que les 5 plus récents
+        setRecentRefunds(activeRefunds)
       }
     } catch (error) {
       console.error('Erreur récupération remboursements:', error)

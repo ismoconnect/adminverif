@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FirestoreService } from '../services/firestoreService'
+import { useAdminAuth } from '../contexts/AdminAuthContext'
 
 // Enhanced SVG Icons
 const FileText = () => (
@@ -52,6 +53,9 @@ const Calendar = () => (
 )
 
 export default function Statistics() {
+  const { admin } = useAdminAuth()
+  const isSuperAdmin = admin?.role === 'super_admin'
+
   const [submissionStats, setSubmissionStats] = useState(null)
   const [refundStats, setRefundStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -66,18 +70,18 @@ export default function Statistics() {
       setLoading(true)
 
       // 1. Charger les statistiques des soumissions
-      const subResult = await FirestoreService.getStatistics()
+      const subResult = await FirestoreService.getStatistics(isSuperAdmin)
       setSubmissionStats(subResult)
 
       // 2. Charger les statistiques des remboursements
-      const refResult = await FirestoreService.getRefundStatistics()
+      const refResult = await FirestoreService.getRefundStatistics(isSuperAdmin)
       if (refResult.success) {
         setRefundStats(refResult.data)
       }
 
       // 3. Charger toutes les soumissions pour les graphiques (on peut limiter à 2000 pour la performance)
-      const allSubmissions = await FirestoreService.getAllSubmissions(2000)
-      setSubmissions(allSubmissions || [])
+      const allSubmissionsResult = await FirestoreService.getAllSubmissions(2000)
+      setSubmissions(allSubmissionsResult.data || [])
 
     } catch (error) {
       console.error('Erreur lors du chargement des stats:', error)
@@ -103,8 +107,8 @@ export default function Statistics() {
 
   const dailyStats = getLast7Days()
   submissions.forEach(s => {
-    // Ignorer les soumissions archivées
-    if (s.isArchived) return
+    // Ignorer les soumissions archivées si on est pas super admin
+    if (!isSuperAdmin && s.isArchived) return
 
     if (s.createdAt) {
       const date = new Date(s.createdAt.seconds * 1000).toISOString().split('T')[0]

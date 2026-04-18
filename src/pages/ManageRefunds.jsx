@@ -156,6 +156,16 @@ export default function ManageRefunds() {
 
   const getFilteredData = () => {
     let filtered = refundRequests
+    
+    if (filter === 'archives') {
+      return filtered.filter(r => r.isArchived)
+    }
+    
+    // Si ce n'est pas le super_admin, masquer TOUS les éléments archivés de la liste
+    if (!isSuperAdmin) {
+      filtered = filtered.filter(r => !r.isArchived)
+    }
+
     if (filter !== 'all') filtered = filtered.filter(r => r.status === filter)
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
@@ -225,6 +235,18 @@ export default function ManageRefunds() {
                   {s === 'all' ? 'Tous' : getStatusInfo(s).text}
                 </button>
               ))}
+              
+              {isSuperAdmin && (
+                <button
+                  onClick={() => { setFilter('archives'); setCurrentPage(1) }}
+                  className={`px-4 py-2 ml-2 border-l-2 border-slate-200 rounded-r-xl text-sm font-bold transition-all ${filter === 'archives'
+                    ? 'bg-slate-800 text-white shadow-md shadow-slate-200'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                >
+                  🗄️ Archives
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -250,7 +272,14 @@ export default function ManageRefunds() {
                     <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-5">
                         <div className="font-mono text-xs text-blue-600 font-bold mb-1">{r.referenceNumber}</div>
-                        <div className="font-semibold text-slate-900">{r.fullName}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold text-slate-900">{r.fullName}</div>
+                          {isSuperAdmin && r.isArchived && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">
+                              Archivé
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-slate-500">{r.email}</div>
                       </td>
                       <td className="px-6 py-5">

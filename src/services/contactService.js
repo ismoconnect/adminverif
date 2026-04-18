@@ -117,7 +117,7 @@ export const getUnreadContactMessages = async () => {
   }
 }
 
-// Fonction pour récupérer les statistiques des messages
+// Fonction pour récupérer les statistiques des messages (exclut les archivés)
 export const getContactStats = async () => {
   try {
     const allMessages = await getAllContactMessages()
@@ -126,11 +126,12 @@ export const getContactStats = async () => {
       return { success: false, error: allMessages.error }
     }
     
-    const unreadCount = allMessages.messages.filter(message => !message.isRead).length
-    const readCount = allMessages.messages.length - unreadCount
+    const activeMessages = allMessages.messages.filter(msg => !msg.isArchived)
+    const unreadCount = activeMessages.filter(message => !message.isRead).length
+    const readCount = activeMessages.length - unreadCount
     
     const stats = {
-      total: allMessages.messages.length,
+      total: activeMessages.length,
       unread: unreadCount,
       read: readCount
     }

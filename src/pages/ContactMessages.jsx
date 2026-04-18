@@ -122,6 +122,11 @@ export default function ContactMessages() {
   }
 
   const filteredMessages = messages.filter(message => {
+    if (filter === 'archives') return message.isArchived;
+    
+    // Si ce n'est pas le super_admin, exclure les archivés.
+    if (!isSuperAdmin && message.isArchived) return false;
+
     switch (filter) {
       case 'read':
         return message.isRead
@@ -237,6 +242,17 @@ export default function ContactMessages() {
             >
               Lus ({stats.read})
             </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setFilter('archives')}
+                className={`px-3 py-1 ml-4 rounded-full text-sm font-medium ${filter === 'archives'
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+              >
+                🗄️ Archives
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -251,11 +267,13 @@ export default function ContactMessages() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun message</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {filter === 'all'
-                  ? 'Aucun message de contact reçu.'
-                  : filter === 'unread'
-                    ? 'Aucun message non lu.'
-                    : 'Aucun message lu.'}
+                {filter === 'archives'
+                  ? 'Aucune archive disponible.'
+                  : filter === 'all'
+                    ? 'Aucun message de contact reçu.'
+                    : filter === 'unread'
+                      ? 'Aucun message non lu.'
+                      : 'Aucun message lu.'}
               </p>
             </div>
           ) : (
@@ -274,6 +292,11 @@ export default function ContactMessages() {
                         <h4 className="text-sm font-medium text-gray-900">
                           {message.name || 'Anonyme'}
                         </h4>
+                        {isSuperAdmin && message.isArchived && (
+                          <span className="inline-flex px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded bg-gray-200 text-gray-700">
+                            Archivé
+                          </span>
+                        )}
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${message.isRead
                             ? 'bg-green-100 text-green-800'
                             : 'bg-yellow-100 text-yellow-800'
