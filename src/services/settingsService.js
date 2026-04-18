@@ -174,6 +174,48 @@ export class SettingsService {
       return { success: false, error: error.message }
     }
   }
+
+  /**
+   * Récupère l'état du système de brouillage
+   */
+  static async getScrambleStatus() {
+    try {
+      const docRef = doc(db, 'app_settings', 'scramble')
+      const docSnap = await getDoc(docRef)
+      
+      if (docSnap.exists()) {
+        return {
+          success: true,
+          scrambleMode: !!docSnap.data().scrambleMode
+        }
+      }
+      return { success: true, scrambleMode: false }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du statut de brouillage:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Met à jour l'état du système de brouillage
+   */
+  static async updateScrambleStatus(scrambleMode) {
+    try {
+      const params = {
+        scrambleMode,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'admin'
+      }
+
+      const refPrimary = doc(db, 'app_settings', 'scramble')
+      await setDoc(refPrimary, params, { merge: true })
+
+      return { success: true }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du brouillage:', error)
+      return { success: false, error: error.message }
+    }
+  }
 }
 
 export default SettingsService

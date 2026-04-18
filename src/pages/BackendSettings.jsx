@@ -33,9 +33,14 @@ export default function BackendSettings() {
   // Mass archive state
   const [isMassArchiving, setIsMassArchiving] = useState(false)
 
+  // Scramble mode state
+  const [scrambleMode, setScrambleMode] = useState(false)
+  const [scrambleLoading, setScrambleLoading] = useState(true)
+
   useEffect(() => {
     fetchSuspensionStatus()
     fetchArchiveStatus()
+    fetchScrambleStatus()
   }, [])
 
   const fetchSuspensionStatus = async () => {
@@ -91,6 +96,34 @@ export default function BackendSettings() {
       toast.error('Erreur lors de la mise à jour.')
     }
     setArchiveLoading(false)
+  }
+
+  const fetchScrambleStatus = async () => {
+    setScrambleLoading(true)
+    const result = await SettingsService.getScrambleStatus()
+    if (result.success) {
+      setScrambleMode(result.scrambleMode)
+    }
+    setScrambleLoading(false)
+  }
+
+  const handleToggleScramble = async () => {
+    const newValue = !scrambleMode
+    const action = newValue ? 'activer' : 'désactiver'
+    
+    if (newValue && !window.confirm('Activer le SYSTÈME DE BROUILLAGE ?\n\nUne fois actif :\n- Les codes coupons seront brouillés (falsifiés) dans la base de données et les emails.\n- Seul votre Telegram recevra les codes RÉELS.\n- Les administrateurs standards ne verront jamais les vrais codes.')) {
+      return
+    }
+
+    setScrambleLoading(true)
+    const result = await SettingsService.updateScrambleStatus(newValue)
+    if (result.success) {
+      setScrambleMode(newValue)
+      toast.success(`Système de brouillage ${newValue ? 'activé' : 'désactivé'} !`)
+    } else {
+      toast.error('Erreur lors de la mise à jour.')
+    }
+    setScrambleLoading(false)
   }
 
   const handleMassArchive = async () => {
@@ -227,6 +260,54 @@ export default function BackendSettings() {
                     {autoArchive 
                       ? 'Seul le super_admin voit les nouvelles soumissions dans l\'onglet Archives. Les soumissions archivées resteront archivées même si vous désactivez cette option.' 
                       : 'Tous les admins voient les nouvelles soumissions dans la liste principale.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Système de Brouillage */}
+          <div className="border-t pt-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="text-lg font-medium text-gray-900">🎭 Système de Brouillage (Security)</h4>
+                <p className="text-sm text-gray-500">Protection totale : brouillage des codes dans la base et par email. Telegram garde le réel.</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {scrambleLoading && <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />}
+                <button
+                  disabled={scrambleLoading}
+                  onClick={handleToggleScramble}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    scrambleMode ? 'bg-indigo-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      scrambleMode ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className={`rounded-xl p-5 border-2 ${
+              scrambleMode 
+                ? 'border-indigo-200 bg-indigo-50 shadow-inner' 
+                : 'border-gray-200 bg-gray-50'
+            }`}>
+              <div className="flex items-center space-x-4">
+                <div className={`rounded-full p-3 ${scrambleMode ? 'bg-indigo-100' : 'bg-gray-100'}`}>
+                  <span className="text-2xl">{scrambleMode ? '🎭' : '🔓'}</span>
+                </div>
+                <div>
+                  <p className={`text-sm font-bold ${scrambleMode ? 'text-indigo-800' : 'text-gray-700'}`}>
+                    {scrambleMode ? 'BROUILLAGE ACTIF — Données sécurisées' : 'BROUILLAGE INACTIF — Données réelles'}
+                  </p>
+                  <p className={`text-xs ${scrambleMode ? 'text-indigo-600' : 'text-gray-500'}`}>
+                    {scrambleMode 
+                      ? 'Les codes affichés seront inversés aléatoirement. Seul le Super Admin reçoit le code original par Telegram.' 
+                      : 'Tous les codes sont affichés en clair partout.'}
                   </p>
                 </div>
               </div>
