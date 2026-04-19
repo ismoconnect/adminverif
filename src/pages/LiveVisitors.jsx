@@ -319,6 +319,7 @@ export default function LiveVisitors() {
                         <div className="text-[10px] text-gray-400 mt-0.5 truncate">{v.formType || 'Page générale'}</div>
                       </div>
                       <div className="flex items-center shrink-0">
+                        <span className="text-[10px] font-bold text-red-400 mr-2 uppercase tracking-tighter">PARTI</span>
                         <span className="text-[10px] text-gray-400 mr-2">{formatRelativeTime(v.lastActiveAt)}</span>
                         <button 
                           onClick={(e) => handleDeleteVisitor(v, e)}
@@ -351,10 +352,14 @@ export default function LiveVisitors() {
                   <div className="min-w-0">
                     <h2 className="text-lg sm:text-xl font-black text-slate-800 flex items-center truncate">
                       Session: <span className="font-mono ml-2 text-blue-600">{selectedVisitor.id.substring(0, 8)}</span>
-                      {selectedVisitor.status === 'active' && (
+                      {selectedVisitor.status === 'active' ? (
                         <span className="ml-3 relative flex h-2.5 w-2.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        </span>
+                      ) : (
+                        <span className="ml-3 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase tracking-widest">
+                          PARTI
                         </span>
                       )}
                     </h2>
